@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.barinventory.entities.WellDistribution;
@@ -47,5 +48,16 @@ public interface WellDistributionRepository
             Long wellId,
             Long brandId
     );
+    
+    @Query("""
+    	    SELECT wd FROM WellDistribution wd
+    	    JOIN wd.distribution d
+    	    WHERE wd.well.wellId = :wellId
+    	    AND d.session.sessionId = :sessionId
+    	    """)
+    	List<WellDistribution> findByWellIdAndSessionId(
+    	    @Param("wellId") Long wellId,
+    	    @Param("sessionId") Long sessionId
+    	);
 
 }

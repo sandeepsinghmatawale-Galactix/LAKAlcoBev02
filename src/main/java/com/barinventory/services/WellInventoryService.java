@@ -66,7 +66,8 @@ public class WellInventoryService {
 		// ✅ Fetch previous + distribution in ONE GO
 		List<WellInventory> previousInventory = wellInventoryRepo.getPreviousWellInventory(wellId);
 
-		List<WellDistribution> distributions = wellDistributionRepo.findByWellWellId(wellId);
+		 
+		List<WellDistribution> distributions = wellDistributionRepo.findByWellIdAndSessionId(wellId, sessionId);
 
 		// ✅ Precompute received qty map (OPTIMIZATION)
 		Map<Long, Integer> receivedMap = distributions.stream().collect(Collectors.groupingBy(

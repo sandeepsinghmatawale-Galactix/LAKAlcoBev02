@@ -1,5 +1,6 @@
 package com.barinventory.services;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,84 +36,109 @@ public class WellInventoryService {
 	/*
 	 * Step 1: Initialize well inventory
 	 */
+	@Transactional
 	public void initializeWellInventory(Long sessionId, Long wellId) {
-		
+
 		System.out.println("Initializing well: " + wellId);
 
+		// ✅ Fetch session & well
 		InventorySession session = sessionRepo.findById(sessionId)
 				.orElseThrow(() -> new RuntimeException("Session not found"));
 
 		Well well = wellRepo.findById(wellId).orElseThrow(() -> new RuntimeException("Well not found"));
 
-		// ✅ 🔒 GUARD FIRST (before any insert)
-		List<WellInventory> existing = wellInventoryRepo.findBySessionSessionIdAndWellWellId(sessionId, wellId);
+		// ✅ Fetch existing inventory ONCE
+		List<WellInventory> existingInventories = wellInventoryRepo.findBySessionSessionIdAndWellWellId(sessionId,
+				wellId);
 
-		boolean alreadyCompleted = !existing.isEmpty()
-				&& existing.stream().allMatch(inv -> inv.getStatus() == InventoryStatus.COMPLETED);
+		// 🔒 If fully completed → block
+		boolean alreadyCompleted = !existingInventories.isEmpty()
+				&& existingInventories.stream().allMatch(inv -> inv.getStatus() == InventoryStatus.COMPLETED);
 
 		if (alreadyCompleted) {
 			throw new RuntimeException("Well already completed. Cannot reopen.");
 		}
 
-		// ✅ If already initialized but not completed → SKIP re-initialization
-		if (!existing.isEmpty()) {
-			return;
-		}
-
-		// -----------------------------------
-
-		List<WellInventory> previousInventory = wellInventoryRepo.getPreviousWellInventory(wellId);
-
-		List<WellDistribution> distributedBrands = wellDistributionRepo.findByWellWellId(wellId);
-
-		Set<Long> existingBrandIds = previousInventory.stream().map(i -> i.getBrand().getBrandId())
+		// ✅ Build existing brand set (IMPORTANT)
+		Set<Long> existingBrandIds = existingInventories.stream().map(inv -> inv.getBrand().getBrandId())
 				.collect(Collectors.toSet());
 
+		// ✅ Fetch previous + distribution in ONE GO
+		List<WellInventory> previousInventory = wellInventoryRepo.getPreviousWellInventory(wellId);
+
+		List<WellDistribution> distributions = wellDistributionRepo.findByWellWellId(wellId);
+
+		// ✅ Precompute received qty map (OPTIMIZATION)
+		Map<Long, Integer> receivedMap = distributions.stream().collect(Collectors.groupingBy(
+				d -> d.getBrand().getBrandId(), Collectors.summingInt(WellDistribution::getDistributedQty)));
+
+		// ✅ Collect inserts (batch insert later)
+		List<WellInventory> toInsert = new ArrayList<>();
+
 		/*
-		 * STEP 1: EXISTING BRANDS (UPSERT)
+		 * STEP 1: Existing brands from previous inventory
 		 */
 		for (WellInventory previous : previousInventory) {
 
-			Integer receivedQty = distributedBrands.stream()
-					.filter(d -> d.getBrand().getBrandId().equals(previous.getBrand().getBrandId()))
-					.mapToInt(WellDistribution::getDistributedQty).sum();
+			Long brandId = previous.getBrand().getBrandId();
 
-			WellInventory inventory = new WellInventory(); // ✅ no need to search again
+			// 🔥 CRITICAL: skip if already exists (idempotent)
+			if (existingBrandIds.contains(brandId)) {
+				continue;
+			}
 
-			inventory.setSession(session);
-			inventory.setWell(well);
-			inventory.setBrand(previous.getBrand());
-			inventory.setOpeningStock(previous.getClosingStock());
-			inventory.setReceivedStock(receivedQty);
-			inventory.setClosingStock(0);
-			inventory.setSaleStock(0);
-			inventory.setStatus(InventoryStatus.IN_PROGRESS);
+			WellInventory inv = new WellInventory();
 
-			wellInventoryRepo.save(inventory);
+			inv.setSession(session);
+			inv.setWell(well);
+			inv.setBrand(previous.getBrand());
+			inv.setOpeningStock(previous.getClosingStock());
+			inv.setReceivedStock(receivedMap.getOrDefault(brandId, 0));
+			inv.setClosingStock(0);
+			inv.setSaleStock(0);
+			inv.setStatus(InventoryStatus.IN_PROGRESS);
+
+			toInsert.add(inv);
 		}
 
 		/*
-		 * STEP 2: NEW BRANDS
+		 * STEP 2: New brands from distribution
 		 */
-		for (WellDistribution distribution : distributedBrands) {
+		for (WellDistribution dist : distributions) {
 
-			Long brandId = distribution.getBrand().getBrandId();
+			Long brandId = dist.getBrand().getBrandId();
 
-			if (!existingBrandIds.contains(brandId)) {
-
-				WellInventory inventory = new WellInventory();
-
-				inventory.setSession(session);
-				inventory.setWell(well);
-				inventory.setBrand(distribution.getBrand());
-				inventory.setOpeningStock(0);
-				inventory.setReceivedStock(distribution.getDistributedQty());
-				inventory.setClosingStock(0);
-				inventory.setSaleStock(0);
-				inventory.setStatus(InventoryStatus.IN_PROGRESS); // ✅ IMPORTANT
-
-				wellInventoryRepo.save(inventory);
+			if (existingBrandIds.contains(brandId)) {
+				continue;
 			}
+
+			// Also skip if already added in step 1
+			boolean alreadyQueued = toInsert.stream().anyMatch(i -> i.getBrand().getBrandId().equals(brandId));
+
+			if (alreadyQueued) {
+				continue;
+			}
+
+			WellInventory inv = new WellInventory();
+
+			inv.setSession(session);
+			inv.setWell(well);
+			inv.setBrand(dist.getBrand());
+			inv.setOpeningStock(0);
+			inv.setReceivedStock(receivedMap.getOrDefault(brandId, 0));
+			inv.setClosingStock(0);
+			inv.setSaleStock(0);
+			inv.setStatus(InventoryStatus.IN_PROGRESS);
+
+			toInsert.add(inv);
+		}
+
+		// ✅ FINAL SAVE (batch)
+		if (!toInsert.isEmpty()) {
+			wellInventoryRepo.saveAll(toInsert);
+			System.out.println("Inserted rows: " + toInsert.size());
+		} else {
+			System.out.println("No new rows inserted (already initialized)");
 		}
 	}
 
@@ -181,106 +207,93 @@ public class WellInventoryService {
 		return all.stream().allMatch(inv -> inv.getStatus() == InventoryStatus.COMPLETED);
 	}
 
-	 
 	public Map<Long, InventoryStatus> getWellStatuses(Long sessionId) {
 
-	    List<Well> allWells = wellRepo.findAll(); // 👈 IMPORTANT
-	    List<WellInventory> inventories =
-	            wellInventoryRepo.findBySessionSessionId(sessionId);
+		List<Well> allWells = wellRepo.findAll(); // 👈 IMPORTANT
+		List<WellInventory> inventories = wellInventoryRepo.findBySessionSessionId(sessionId);
 
-	    Map<Long, List<WellInventory>> grouped =
-	            inventories.stream()
-	                    .collect(Collectors.groupingBy(i -> i.getWell().getWellId()));
+		Map<Long, List<WellInventory>> grouped = inventories.stream()
+				.collect(Collectors.groupingBy(i -> i.getWell().getWellId()));
 
-	    Map<Long, InventoryStatus> result = new HashMap<>();
+		Map<Long, InventoryStatus> result = new HashMap<>();
 
-	    for (Well well : allWells) {
+		for (Well well : allWells) {
 
-	        List<WellInventory> wellInv = grouped.get(well.getWellId());
+			List<WellInventory> wellInv = grouped.get(well.getWellId());
 
-	        if (wellInv == null || wellInv.isEmpty()) {
-	            result.put(well.getWellId(), InventoryStatus.IN_PROGRESS); // ✅ FIX
-	        } else {
-	            boolean completed = wellInv.stream()
-	                    .allMatch(inv -> inv.getStatus() == InventoryStatus.COMPLETED);
+			if (wellInv == null || wellInv.isEmpty()) {
+				result.put(well.getWellId(), InventoryStatus.IN_PROGRESS); // ✅ FIX
+			} else {
+				boolean completed = wellInv.stream().allMatch(inv -> inv.getStatus() == InventoryStatus.COMPLETED);
 
-	            result.put(well.getWellId(),
-	                    completed ? InventoryStatus.COMPLETED : InventoryStatus.IN_PROGRESS);
-	        }
-	    }
+				result.put(well.getWellId(), completed ? InventoryStatus.COMPLETED : InventoryStatus.IN_PROGRESS);
+			}
+		}
 
-	    return result;
+		return result;
 	}
 
 	public Long getNextPendingWell(Long sessionId) {
 
-	    List<Well> allWells = wellRepo.findAll(); // ✅ include ALL wells
+		List<Well> allWells = wellRepo.findAll(); // ✅ ALL wells
 
-	    for (Well well : allWells) {
+		for (Well well : allWells) {
 
-	        List<WellInventory> inventories =
-	                wellInventoryRepo.findBySessionSessionIdAndWellWellId(sessionId, well.getWellId());
+			List<WellInventory> inventories = wellInventoryRepo.findBySessionSessionIdAndWellWellId(sessionId,
+					well.getWellId());
 
-	        // ✅ NOT STARTED
-	        if (inventories.isEmpty()) {
-	            return well.getWellId();
-	        }
+			// ✅ NOT STARTED
+			if (inventories.isEmpty()) {
+				return well.getWellId();
+			}
 
-	        // ✅ IN PROGRESS
-	        boolean completed = inventories.stream()
-	                .allMatch(inv -> inv.getStatus() == InventoryStatus.COMPLETED);
+			// ✅ CHECK COMPLETED
+			boolean completed = inventories.stream().allMatch(inv -> inv.getStatus() == InventoryStatus.COMPLETED);
 
-	        if (!completed) {
-	            return well.getWellId();
-	        }
-	    }
+			if (!completed) {
+				return well.getWellId();
+			}
+		}
 
-	    return null; // ✅ all done
+		return null; // all completed
 	}
 
-	
 	public boolean isWellCompleted(Long sessionId, Long wellId) {
 
-	    List<WellInventory> inventories =
-	            wellInventoryRepo.findBySessionSessionIdAndWellWellId(sessionId, wellId);
+		List<WellInventory> inventories = wellInventoryRepo.findBySessionSessionIdAndWellWellId(sessionId, wellId);
 
-	    return !inventories.isEmpty() &&
-	            inventories.stream()
-	                    .allMatch(inv -> inv.getStatus() == InventoryStatus.COMPLETED);
+		return !inventories.isEmpty()
+				&& inventories.stream().allMatch(inv -> inv.getStatus() == InventoryStatus.COMPLETED);
 	}
-	
+
 	public int getSessionProgress(Long sessionId) {
 
-	    List<Well> allWells = wellRepo.findAll();
+		List<Well> allWells = wellRepo.findAll();
 
-	    if (allWells.isEmpty()) {
-	        return 0;
-	    }
+		if (allWells.isEmpty()) {
+			return 0;
+		}
 
-	    List<WellInventory> allInventories =
-	            wellInventoryRepo.findBySessionSessionId(sessionId);
+		List<WellInventory> allInventories = wellInventoryRepo.findBySessionSessionId(sessionId);
 
-	    Map<Long, List<WellInventory>> grouped =
-	            allInventories.stream()
-	                    .collect(Collectors.groupingBy(i -> i.getWell().getWellId()));
+		Map<Long, List<WellInventory>> grouped = allInventories.stream()
+				.collect(Collectors.groupingBy(i -> i.getWell().getWellId()));
 
-	    int completedCount = 0;
+		int completedCount = 0;
 
-	    for (Well well : allWells) {
+		for (Well well : allWells) {
 
-	        List<WellInventory> inventories = grouped.get(well.getWellId());
+			List<WellInventory> inventories = grouped.get(well.getWellId());
 
-	        boolean completed = inventories != null &&
-	                inventories.stream()
-	                        .allMatch(inv -> inv.getStatus() == InventoryStatus.COMPLETED);
+			boolean completed = inventories != null
+					&& inventories.stream().allMatch(inv -> inv.getStatus() == InventoryStatus.COMPLETED);
 
-	        if (completed) {
-	            completedCount++;
-	        }
-	    }
+			if (completed) {
+				completedCount++;
+			}
+		}
 
-	    return (completedCount * 100) / allWells.size();
+		return (completedCount * 100) / allWells.size();
 	}
-	
-	
+
 }

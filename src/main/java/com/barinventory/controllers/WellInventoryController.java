@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.barinventory.dtos.WellClosingRequest;
+import com.barinventory.entities.InventorySession;
 import com.barinventory.entities.InventoryStatus;
 import com.barinventory.entities.Well;
 import com.barinventory.entities.WellInventory;
+import com.barinventory.repos.InventorySessionRepository;
 import com.barinventory.repos.WellInventoryRepository;
 import com.barinventory.repos.WellRepository;
 import com.barinventory.services.WellInventoryService;
@@ -32,6 +34,7 @@ public class WellInventoryController {
 	private final WellService wellService;
 	private final WellInventoryRepository wellInventoryRepo;
 	private final WellRepository wellRepo;
+	private final InventorySessionRepository sessionRepo;
 
 	/*
 	 * SELECT WELL PAGE
@@ -53,9 +56,7 @@ public class WellInventoryController {
 		// existing logic
 		boolean completed = wellInventoryService.isSessionCompleted(sessionId);
 		model.addAttribute("sessionCompleted", completed);
-		
- 
-	    
+
 		int progress = wellInventoryService.getSessionProgress(sessionId);
 		model.addAttribute("progress", progress);
 
@@ -78,11 +79,14 @@ public class WellInventoryController {
 			return "redirect:/well/select/" + sessionId;
 		}
 
+		// ✅ Delegates to service (correct architecture)
 		wellInventoryService.initializeWellInventory(sessionId, wellId);
 
 		return "redirect:/well/" + sessionId + "/" + wellId;
 	}
 
+	// -------------------------------
+	// continue insert logic
 	/*
 	 * OPEN WELL INVENTORY PAGE
 	 */
@@ -114,36 +118,42 @@ public class WellInventoryController {
 	 */
 
 	@PostMapping("/closing/{sessionId}/{wellId}")
-	public String updateClosing(@PathVariable Long sessionId, @PathVariable Long wellId,
-			@RequestParam List<Long> brandId, @RequestParam List<Integer> closingStock) {
+	public String updateClosing(
+	        @PathVariable Long sessionId,
+	        @PathVariable Long wellId,
+	        @RequestParam List<Long> brandId,
+	        @RequestParam List<Integer> closingStock
+	) {
 
-		List<WellClosingRequest> requests = new ArrayList<>();
+	    List<WellClosingRequest> requests = new ArrayList<>();
 
-		for (int i = 0; i < brandId.size(); i++) {
-			WellClosingRequest req = new WellClosingRequest();
-			req.setBrandId(brandId.get(i));
-			req.setClosingStock(closingStock.get(i));
-			requests.add(req);
-		}
+	    for (int i = 0; i < brandId.size(); i++) {
+	        WellClosingRequest req = new WellClosingRequest();
+	        req.setBrandId(brandId.get(i));
+	        req.setClosingStock(closingStock.get(i));
+	        requests.add(req);
+	    }
 
-		// ✅ SAVE CURRENT WELL
-		wellInventoryService.updateWellClosing(sessionId, wellId, requests);
+	    // ✅ SAVE CURRENT WELL
+	    wellInventoryService.updateWellClosing(sessionId, wellId, requests);
 
-		// ✅ GET NEXT WELL
-		Long nextWellId = wellInventoryService.getNextPendingWell(sessionId);
+	    // ✅ GET NEXT WELL
+	    Long nextWellId = wellInventoryService.getNextPendingWell(sessionId);
 
-		if (nextWellId != null) {
+	    if (nextWellId != null) {
 
-			// ⭐⭐⭐ THIS IS THE MISSING PIECE ⭐⭐⭐
-			wellInventoryService.initializeWellInventory(sessionId, nextWellId);
+	        // ✅ ONLY initialize if NOT already created
+	        List<WellInventory> nextWellInventory =
+	                wellInventoryRepo.findBySessionSessionIdAndWellWellId(sessionId, nextWellId);
 
-			return "redirect:/well/" + sessionId + "/" + nextWellId;
-		}
+	        if (nextWellInventory.isEmpty()) {
+	            wellInventoryService.initializeWellInventory(sessionId, nextWellId);
+	        }
 
-		// ✅ ALL DONE → BACK TO SELECT PAGE
-		return "redirect:/well/select/" + sessionId;
+	        return "redirect:/well/" + sessionId + "/" + nextWellId;
+	    }
+
+	    // ✅ FINAL RETURN (VERY IMPORTANT)
+	    return "redirect:/well/select/" + sessionId;
 	}
-	
-	
-
 }

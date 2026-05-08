@@ -15,8 +15,21 @@ import jakarta.persistence.LockModeType;
 
 @Repository
 public interface WellInventoryRepository extends JpaRepository<WellInventory, Long> {
+	
+	boolean existsByWellWellIdAndBrandSizeBrandSizeId(
+	        Long wellId,
+	        Long brandSizeId
+	);
 
-	boolean existsByWellWellIdAndBrandBrandId(Long wellId, Long brandId);
+	Optional<WellInventory>
+	findByBarBarIdAndSessionSessionIdAndWellWellIdAndBrandSizeBrandSizeId(
+	        Long barId,
+	        Long sessionId,
+	        Long wellId,
+	        Long brandSizeId
+	);
+
+	 
 
 	List<WellInventory> findByWellWellIdAndSessionSessionId(Long wellId, Long sessionId);
 
@@ -29,9 +42,7 @@ public interface WellInventoryRepository extends JpaRepository<WellInventory, Lo
 
 	List<WellInventory> findByBarBarIdAndSessionSessionIdAndWellWellId(Long barId, Long sessionId, Long wellId);
 
-	Optional<WellInventory> findByBarBarIdAndSessionSessionIdAndWellWellIdAndBrandBrandId(Long barId, Long sessionId,
-			Long wellId, Long brandId);
-
+	 
 	@Query("""
 			    SELECT wi FROM WellInventory wi
 			    WHERE wi.bar.barId = :barId

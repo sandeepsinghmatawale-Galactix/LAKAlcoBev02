@@ -22,9 +22,15 @@ import lombok.RequiredArgsConstructor;
 public class StockroomInventoryService {
 
 	private final StockroomInventoryRepository stockroomRepo;
+
 	private final InventorySessionRepository sessionRepo;
+
 	private final DistributionRepository distributionRepo;
 
+	/*
+	 * ----------------------------------------- INITIALIZE STOCKROOM
+	 * -----------------------------------------
+	 */
 	public void initializeStockroom(Long currentSessionId, Long previousSessionId) {
 
 		List<StockroomInventory> previousStocks = stockroomRepo.findBySessionSessionId(previousSessionId);
@@ -33,99 +39,110 @@ public class StockroomInventoryService {
 
 		for (StockroomInventory previous : previousStocks) {
 
-		    boolean exists = stockroomRepo
-		        .existsByBarBarIdAndSessionSessionIdAndBrandBrandId(
-		            currentSession.getBar().getBarId(),
-		            currentSessionId,
-		            previous.getBrand().getBrandId()
-		        );
+			boolean exists = stockroomRepo.existsByBarBarIdAndSessionSessionIdAndBrandSizeBrandSizeId(
+					currentSession.getBar().getBarId(), currentSessionId, previous.getBrandSize().getBrandSizeId());
 
-		    if (exists) {
-		        continue;
-		    }
+			if (exists) {
+				continue;
+			}
 
-		    StockroomInventory current = new StockroomInventory();
+			StockroomInventory current = new StockroomInventory();
 
-		    current.setSession(currentSession);
-		    current.setBrand(previous.getBrand());
-		    current.setBar(currentSession.getBar());
-		    current.setOpeningStock(previous.getClosingStock());
-		    current.setReceivedStock(0);
-		    current.setClosingStock(0);
-		    current.setSaleStock(0);
+			current.setSession(currentSession);
 
-		    stockroomRepo.save(current);
+			current.setBar(currentSession.getBar());
+
+			current.setBrandSize(previous.getBrandSize());
+
+			current.setOpeningStock(previous.getClosingStock());
+
+			current.setReceivedStock(0);
+
+			current.setClosingStock(0);
+
+			current.setSaleStock(0);
+
+			stockroomRepo.save(current);
 		}
 	}
 
-	public void save(StockroomInventory stock){
-	    stockroomRepo.save(stock);
+	/*
+	 * ----------------------------------------- SAVE
+	 * -----------------------------------------
+	 */
+	public void save(StockroomInventory stock) {
+
+		stockroomRepo.save(stock);
 	}
-	
+
+	/*
+	 * ----------------------------------------- GET STOCKROOM
+	 * -----------------------------------------
+	 */
 	public List<StockroomInventory> getStockroomByBarAndSession(Long barId, Long sessionId) {
-	    return stockroomRepo.findByBarBarIdAndSessionSessionId(barId, sessionId);
+
+		return stockroomRepo.findByBarBarIdAndSessionSessionId(barId, sessionId);
 	}
-	
+
 	public List<StockroomInventory> getStockroomBySession(Long sessionId) {
+
 		return stockroomRepo.findBySessionSessionId(sessionId);
 	}
 
-	 
-	// rename from updateClosingStock → updateStockroomClosing, add barId
-	public void updateStockroomClosing(Long barId, Long sessionId,
-	                                    List<StockroomClosingRequest> requests) {
+	/*
+	 * ----------------------------------------- UPDATE CLOSING
+	 * -----------------------------------------
+	 */
+	public void updateStockroomClosing(Long barId, Long sessionId, List<StockroomClosingRequest> requests) {
 
-	    // ✅ validate session belongs to bar
-	    InventorySession session = sessionRepo.findById(sessionId)
-	            .orElseThrow(() -> new RuntimeException("Session not found"));
+		InventorySession session = sessionRepo.findById(sessionId)
+				.orElseThrow(() -> new RuntimeException("Session not found"));
 
-	    if (!session.getBar().getBarId().equals(barId)) {
-	        throw new RuntimeException("Session does not belong to this bar");
-	    }
+		if (!session.getBar().getBarId().equals(barId)) {
 
-	    for (StockroomClosingRequest request : requests) {
-	        StockroomInventory stock = stockroomRepo
-	                .findBySessionSessionIdAndBrandBrandId(sessionId, request.getBrandId())
-	                .orElseThrow(() -> new RuntimeException("Stock not found"));
+			throw new RuntimeException("Session does not belong to this bar");
+		}
 
-	        int totalAvailable = stock.getOpeningStock() + stock.getReceivedStock();
+		for (StockroomClosingRequest request : requests) {
 
-	        if (request.getClosingStock() > totalAvailable) {
-	            throw new RuntimeException("Invalid closing stock for brand: "
-	                    + stock.getBrand().getBrandName());
-	        }
+			StockroomInventory stock = stockroomRepo
+					.findBySessionSessionIdAndBrandSizeBrandSizeId(sessionId, request.getBrandSizeId())
+					.orElseThrow(() -> new RuntimeException("Stock not found"));
 
-	        stock.setClosingStock(request.getClosingStock());
-	        stock.setSaleStock(totalAvailable - request.getClosingStock());
-	        // ✅ no explicit save() needed — JPA dirty tracking handles it
-	    }
+			int totalAvailable = stock.getOpeningStock() + stock.getReceivedStock();
+
+			if (request.getClosingStock() > totalAvailable) {
+
+				throw new RuntimeException("Invalid closing stock for " + stock.getBrandSize().getBrand().getBrandName()
+						+ " " + stock.getBrandSize().getSizeMl() + "ml");
+			}
+
+			stock.setClosingStock(request.getClosingStock());
+
+			stock.setSaleStock(totalAvailable - request.getClosingStock());
+		}
 	}
-	
+
+	/*
+	 * ----------------------------------------- SALE STOCK MAP
+	 * -----------------------------------------
+	 */
 	public Map<Long, Integer> getSaleStockMap(Long distributionId) {
 
-	    // 1. Get sessionId from distribution
-	    Long sessionId = distributionRepo
-	            .findById(distributionId)
-	            .orElseThrow()
-	            .getSession()
-	            .getSessionId();
+		Long sessionId = distributionRepo.findById(distributionId).orElseThrow().getSession().getSessionId();
 
-	    // 2. Get stockroom data
-	    List<StockroomInventory> stocks =
-	            stockroomRepo.findBySessionSessionId(sessionId);
+		List<StockroomInventory> stocks = stockroomRepo.findBySessionSessionId(sessionId);
 
-	    // 3. Convert to Map<brandId, saleStock>
-	    Map<Long, Integer> stockMap = new HashMap<>();
+		Map<Long, Integer> stockMap = new HashMap<>();
 
-	    for (StockroomInventory stock : stocks) {
-	        stockMap.put(
-	                stock.getBrand().getBrandId(),
-	                stock.getSaleStock()
-	        );
-	    }
-
-	    return stockMap;
+		for (StockroomInventory stock : stocks) {
+		    int available = stock.getSaleStock() > 0
+		        ? stock.getSaleStock()
+		        : (stock.getOpeningStock() + stock.getReceivedStock() - stock.getClosingStock());
+		    if (available > 0) {
+		        stockMap.put(stock.getBrandSize().getBrandSizeId(), available);
+		    }
+		}
+		return stockMap;
 	}
-	
-	
 }

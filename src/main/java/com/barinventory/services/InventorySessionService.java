@@ -7,12 +7,12 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 import com.barinventory.entities.Bar;
-import com.barinventory.entities.Brand;
+import com.barinventory.entities.BrandSize;
 import com.barinventory.entities.InventorySession;
 import com.barinventory.entities.SessionStatus;
 import com.barinventory.entities.StockroomInventory;
 import com.barinventory.repos.BarRepository;
-import com.barinventory.repos.BrandRepository;
+import com.barinventory.repos.BrandSizeRepository;
 import com.barinventory.repos.InventorySessionRepository;
 import com.barinventory.repos.StockroomInventoryRepository;
 
@@ -24,102 +24,82 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class InventorySessionService {
 
-	private final InventorySessionRepository sessionRepo;
-	private final StockroomInventoryService stockroomService;
-	private final BrandRepository brandRepo;
-	private final BarRepository barRepo;
-	private final StockroomInventoryRepository stockroomRepo;
+    private final InventorySessionRepository sessionRepo;
+ 
+    private final BrandSizeRepository brandSizeRepo;
+    private final BarRepository barRepo;
+    private final StockroomInventoryRepository stockroomRepo;
 
-	/*
-	 * ----------------------------------------- CREATE SESSION (MULTI-BAR SAFE)
-	 * -----------------------------------------
-	 */
-	public InventorySession createSession(Long barId, String sessionName) {
+    /*
+     -----------------------------------------
+     CREATE SESSION
+     -----------------------------------------
+    */
+    public InventorySession createSession(Long barId, String sessionName) {
 
-		// ✅ 1. Validate Bar
-		Bar bar = barRepo.findById(barId).orElseThrow(() -> new RuntimeException("Bar not found"));
+        Bar bar = barRepo.findById(barId)
+                .orElseThrow(() -> new RuntimeException("Bar not found"));
 
-		// ✅ 2. Enforce ONE OPEN session per bar (optimized)
-		if (sessionRepo.existsByBarBarIdAndStatus(barId, SessionStatus.OPEN)) {
-			throw new RuntimeException("An OPEN session already exists for this bar");
-		}
+        if (sessionRepo.existsByBarBarIdAndStatus(barId, SessionStatus.OPEN)) {
+            throw new RuntimeException("An OPEN session already exists");
+        }
 
-		// ✅ 3. Create new session
-		InventorySession current = new InventorySession();
-		current.setSessionName(sessionName);
-		current.setSessionDate(LocalDateTime.now()); // ✅ correct type
-		current.setStatus(SessionStatus.OPEN);
-		current.setBar(bar);
+        InventorySession session = new InventorySession();
 
-		current = sessionRepo.save(current);
+        session.setSessionName(sessionName);
+        session.setSessionDate(LocalDateTime.now());
+        session.setStatus(SessionStatus.OPEN);
+        session.setBar(bar);
 
-		// ✅ 4. Fetch previous CLOSED session (same bar)
-		Optional<InventorySession> previousSessionOpt = sessionRepo
-				.findTopByBarBarIdAndStatusOrderBySessionIdDesc(barId, SessionStatus.CLOSED);
+        // save into NEW variable
+        InventorySession savedSession = sessionRepo.save(session);
+        // 🔥 ALWAYS initialize stockroom (NO CONDITIONS)
+        List<BrandSize> brandSizes =
+                brandSizeRepo.findByBarBarId(barId);
 
-		/*
-		 * ----------------------------------------- FIRST SESSION CASE
-		 * -----------------------------------------
-		 */
-		if (previousSessionOpt.isEmpty()) {
+        List<StockroomInventory> stocks = brandSizes.stream().map(bs -> {
 
-		    List<Brand> brands = brandRepo.findByBarBarId(barId);
+            StockroomInventory s = new StockroomInventory();
 
-		    InventorySession savedSession = sessionRepo.save(current);
+            s.setSession(session);
+            s.setBar(bar);
+            s.setBrandSize(bs);
 
-		    List<StockroomInventory> stocks = brands.stream().map(brand -> {
+            s.setOpeningStock(0);
+            s.setReceivedStock(0);
+            s.setClosingStock(0);
+            s.setSaleStock(0);
 
-		        StockroomInventory stock = new StockroomInventory();
+            return s;
+        }).toList();
 
-		        stock.setSession(savedSession);
-		        stock.setBrand(brand);
-		        stock.setBar(bar);
+        stockroomRepo.saveAll(stocks);
 
-		        stock.setOpeningStock(0);
-		        stock.setReceivedStock(0);
-		        stock.setClosingStock(0);
-		        stock.setSaleStock(0);
+        return session;
+    }
+       
+    /*
+     -----------------------------------------
+     CLOSE SESSION
+     -----------------------------------------
+    */
+    public void closeSession(Long sessionId) {
 
-		        return stock;
+        InventorySession session =
+                sessionRepo.findById(sessionId)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Session not found"
+                        ));
 
-		    }).toList();
+        if (session.getStatus()
+                == SessionStatus.CLOSED) {
 
-		    stockroomRepo.saveAll(stocks);
+            throw new RuntimeException(
+                    "Session already closed"
+            );
+        }
 
-		    return current;
-		}
-
-		/*
-		 * ----------------------------------------- NORMAL FLOW (Carry Forward)
-		 * -----------------------------------------
-		 */
-		InventorySession previousSession = previousSessionOpt.get();
-
-		stockroomService.initializeStockroom(current.getSessionId(), previousSession.getSessionId());
-
-		return current;
-	}
-
-	/*
-	 * ----------------------------------------- CLOSE SESSION
-	 * -----------------------------------------
-	 */
-	public void closeSession(Long sessionId) {
-
-		InventorySession session = sessionRepo.findById(sessionId)
-				.orElseThrow(() -> new RuntimeException("Session not found"));
-
-		// ✅ Prevent duplicate closing
-		if (session.getStatus() == SessionStatus.CLOSED) {
-			throw new RuntimeException("Session already closed");
-		}
-
-		// ✅ Optional: enforce completion before closing
-		// if (!wellInventoryService.isSessionCompleted(sessionId)) {
-		// throw new RuntimeException("Cannot close session. Pending wells exist.");
-		// }
-
-		session.setStatus(SessionStatus.CLOSED);
-		// ✅ No need to call save() → JPA will auto flush
-	}
+        session.setStatus(SessionStatus.CLOSED);
+    }
 }

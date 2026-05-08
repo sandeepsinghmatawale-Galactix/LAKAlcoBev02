@@ -18,22 +18,24 @@ public interface WellDistributionRepository
 	List<WellDistribution> findByDistributionDistributionId(Long distributionId);
 	
 	@Query("""
-			SELECT COALESCE(SUM(w.distributedQty),0)
-			FROM WellDistribution w
-			WHERE w.distribution.distributionId = :distributionId
-			AND w.brand.brandId = :brandId
-			""")
-			Integer getTotalDistributedQty(Long distributionId, Long brandId);
+	        SELECT COALESCE(SUM(w.distributedQty),0)
+	        FROM WellDistribution w
+	        WHERE w.distribution.distributionId = :distributionId
+	        AND w.brandSize.brandSizeId = :brandSizeId
+	        """)
+	Integer getTotalDistributedQty(Long distributionId, Long brandSizeId);
 	
-	List<WellDistribution> 
-	findByWellWellIdAndBrandBrandId(Long wellId, Long brandId);
+	List<WellDistribution>
+	findByWellWellIdAndBrandSizeBrandSizeId(
+	        Long wellId,
+	        Long brandSizeId
+	);
 	
  
 
-    List<WellDistribution> findByBrandBrandId(
-            Long brandId
-    );
-
+	List<WellDistribution> findByBrandSizeBrandSizeId(
+	        Long brandSizeId
+	);
     List<WellDistribution> findByWellWellId(
             Long wellId
     );
@@ -42,13 +44,12 @@ public interface WellDistributionRepository
     @Query("DELETE FROM WellDistribution wd WHERE wd.distribution.distributionId = :distributionId")
     void deleteByDistributionId(Long distributionId);
     
-    Optional<WellDistribution> 
-    findByDistribution_DistributionIdAndWell_WellIdAndBrand_BrandId(
+    Optional<WellDistribution>
+    findByDistribution_DistributionIdAndWell_WellIdAndBrandSize_BrandSizeId(
             Long distributionId,
             Long wellId,
-            Long brandId
+            Long brandSizeId
     );
-    
     
     
     @Query("""

@@ -1,6 +1,7 @@
 package com.barinventory.controllers;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +17,7 @@ import com.barinventory.config.SecurityUtils;
 import com.barinventory.dtos.DistributionRequest;
 import com.barinventory.dtos.DistributionRequestWrapper;
 import com.barinventory.entities.Brand;
+import com.barinventory.entities.BrandSize;
 import com.barinventory.entities.Distribution;
 import com.barinventory.entities.StockroomInventory;
 import com.barinventory.entities.Well;
@@ -31,100 +33,175 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/distribution")
 public class DistributionController {
 
-	private final DistributionService distributionService;
-	private final BrandService brandService;
-	private final WellService wellService;
-	private final StockroomInventoryService stockroomService;
+    private final DistributionService distributionService;
+    private final BrandService brandService;
+    private final WellService wellService;
+    private final StockroomInventoryService stockroomService;
 
-	// GET /distribution/create-page/{sessionId}
-	@GetMapping("/create-page/{sessionId}")
-	public String createDistributionPage(@PathVariable Long sessionId, Model model) {
-		model.addAttribute("sessionId", sessionId);
-		return "distribution/distribution-create";
-	}
+    /*
+     -----------------------------------------
+     CREATE DISTRIBUTION PAGE
+     -----------------------------------------
+    */
+    @GetMapping("/create-page/{sessionId}")
+    public String createDistributionPage(
+            @PathVariable Long sessionId,
+            Model model
+    ) {
 
-	// POST /distribution/create/{sessionId}
-	@PostMapping("/create/{sessionId}")
-	public String createDistribution(@PathVariable Long sessionId) {
-		Long barId = SecurityUtils.getBarId();
-		Distribution distribution = distributionService.createDistribution(barId, sessionId);
-		return "redirect:/distribution/allocation/" + distribution.getDistributionId();
-	}
+        model.addAttribute("sessionId", sessionId);
 
-	// GET /distribution/allocation/{distributionId}
-	@GetMapping("/allocation/{distributionId}")
-	public String allocationPage(@PathVariable Long distributionId, Model model) {
-		Long barId = SecurityUtils.getBarId();
-		System.out.println("barId from security: " + barId);
-		List<Brand> brands = brandService.getBrandsByBar(barId);
-		List<Well> wells = wellService.getWellsByBar(barId);
-		Map<Long, Integer> stockMap = stockroomService.getSaleStockMap(distributionId);		 
-		 
+        return "distribution/distribution-create";
+    }
 
-		// Fallback if bar_id not set on brands/wells in DB
-	 
-		if (wells.isEmpty()) wells = wellService.getAllWells();
-		
-		System.out.println("Brands count: " + brands.size());
-		System.out.println("StockMap: " + stockMap);
-		System.out.println("Wells count: " + wells.size());
-		List<DistributionRequest> requests = new ArrayList<>();
-		for (Brand brand : brands) {
-			for (Well well : wells) {
-				DistributionRequest req = new DistributionRequest();
-				req.setBrandId(brand.getBrandId());
-				req.setWellId(well.getWellId());
-				req.setDistributedQty(0);
-				requests.add(req);
-			}
-		}
+    /*
+     -----------------------------------------
+     CREATE DISTRIBUTION
+     -----------------------------------------
+    */
+    @PostMapping("/create/{sessionId}")
+    public String createDistribution(
+            @PathVariable Long sessionId
+    ) {
 
-		DistributionRequestWrapper wrapper = new DistributionRequestWrapper();
+        Long barId = SecurityUtils.getBarId();
 
-		Long sessionId = distributionService.getSessionIdByDistribution(distributionId);
-		wrapper.setRequests(requests);
-		List<StockroomInventory> stocks = stockroomService.getStockroomBySession(sessionId);
+        Distribution distribution =
+                distributionService.createDistribution(
+                        barId,
+                        sessionId
+                );
 
-		model.addAttribute("stocks", stocks);
-		model.addAttribute("brands", brands);
-		model.addAttribute("wells", wells);
-		model.addAttribute("stockMap", stockMap);
-		model.addAttribute("distributionId", distributionId);
-		model.addAttribute("wrapper", wrapper);
+        return "redirect:/distribution/allocation/"
+                + distribution.getDistributionId();
+    }
 
-		return "distribution/distribution-allocation";
-	}
+    /*
+     -----------------------------------------
+     ALLOCATION PAGE
+     -----------------------------------------
+    */
+    @GetMapping("/allocation/{distributionId}")
+    public String allocationPage(@PathVariable Long distributionId, Model model) {
 
-	// POST /distribution/allocate/{distributionId}
-	@PostMapping("/allocate/{distributionId}")
-	public String distribute(@PathVariable Long distributionId, @ModelAttribute DistributionRequestWrapper wrapper,
-			Model model) {
-		Long barId = SecurityUtils.getBarId();
+        Long barId = SecurityUtils.getBarId();
 
-		try {
-			distributionService.distributeStock(distributionId, wrapper.getRequests());
+        List<Brand> brands = brandService.getBrandsByBar(barId);
+        List<Well> wells = wellService.getWellsByBar(barId);
+        if (wells.isEmpty()) wells = wellService.getAllWells();
 
-			Long sessionId = distributionService.getSessionIdByDistribution(distributionId);
+        Map<Long, Integer> stockMap = stockroomService.getSaleStockMap(distributionId);
 
-			return "redirect:/well/select/" + sessionId;
+        List<DistributionRequest> requests = new ArrayList<>();
+        Map<String, Integer> indexMap = new HashMap<>();
+        int idx = 0;
 
-		} catch (RuntimeException ex) {
-			ex.printStackTrace();
+        for (Brand brand : brands) {
+            if (brand.getBrandSizes() == null || brand.getBrandSizes().isEmpty()) continue;
+            for (BrandSize brandSize : brand.getBrandSizes()) {
+                for (Well well : wells) {
+                    DistributionRequest req = new DistributionRequest();
+                    req.setBrandSizeId(brandSize.getBrandSizeId());
+                    req.setWellId(well.getWellId());
+                    req.setDistributedQty(0);
+                    requests.add(req);
+                    indexMap.put(brandSize.getBrandSizeId() + "_" + well.getWellId(), idx++);
+                }
+            }
+        }
 
-			List<Brand> brands = brandService.getBrandsByBar(barId);
-			List<Well> wells = wellService.getWellsByBar(barId);
-			Map<Long, Integer> stockMap = stockroomService.getSaleStockMap(distributionId);
-			System.out.println("Brands count: " + brands.size());
-			System.out.println("StockMap: " + stockMap);
-			System.out.println("Wells count: " + wells.size());
-			model.addAttribute("brands", brands);
-			model.addAttribute("wells", wells);
-			model.addAttribute("stockMap", stockMap);
-			model.addAttribute("distributionId", distributionId);
-			model.addAttribute("error", ex.getMessage());
-			model.addAttribute("wrapper", wrapper);
+        DistributionRequestWrapper wrapper = new DistributionRequestWrapper();
+        wrapper.setRequests(requests);
 
-			return "distribution/distribution-allocation";
-		}
-	}
+        Long sessionId = distributionService.getSessionIdByDistribution(distributionId);
+        List<StockroomInventory> stocks = stockroomService.getStockroomBySession(sessionId);
+
+        model.addAttribute("stocks", stocks);
+        model.addAttribute("brands", brands);
+        model.addAttribute("wells", wells);
+        model.addAttribute("stockMap", stockMap);
+        model.addAttribute("indexMap", indexMap);
+        model.addAttribute("distributionId", distributionId);
+        model.addAttribute("wrapper", wrapper);
+
+        return "distribution/distribution-allocation";
+    }
+    /*
+     * 
+     -----------------------------------------
+     DISTRIBUTE STOCK
+     -----------------------------------------
+    */
+    @PostMapping("/allocate/{distributionId}")
+    public String distribute(
+            @PathVariable Long distributionId,
+            @ModelAttribute DistributionRequestWrapper wrapper,
+            Model model
+    ) {
+
+        Long barId = SecurityUtils.getBarId();
+
+        try {
+
+            distributionService.distributeStock(
+                    distributionId,
+                    wrapper.getRequests()
+            );
+
+            Long sessionId =
+                    distributionService
+                            .getSessionIdByDistribution(
+                                    distributionId
+                            );
+
+            return "redirect:/well/select/" + sessionId;
+
+        } catch (RuntimeException ex) {
+
+            ex.printStackTrace();
+
+            List<Brand> brands =
+                    brandService.getBrandsByBar(barId);
+
+            List<Well> wells =
+                    wellService.getWellsByBar(barId);
+
+            Map<Long, Integer> stockMap =
+                    stockroomService.getSaleStockMap(
+                            distributionId
+                    );
+
+            model.addAttribute(
+                    "brands",
+                    brands
+            );
+
+            model.addAttribute(
+                    "wells",
+                    wells
+            );
+
+            model.addAttribute(
+                    "stockMap",
+                    stockMap
+            );
+
+            model.addAttribute(
+                    "distributionId",
+                    distributionId
+            );
+
+            model.addAttribute(
+                    "error",
+                    ex.getMessage()
+            );
+
+            model.addAttribute(
+                    "wrapper",
+                    wrapper
+            );
+
+            return "distribution/distribution-allocation";
+        }
+    }
 }

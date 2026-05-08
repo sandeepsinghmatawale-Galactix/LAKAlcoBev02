@@ -21,38 +21,78 @@ public class StockroomInventoryController {
 
     private final StockroomInventoryService stockroomService;
 
-    // GET /stockroom/{sessionId}
+    /*
+     -----------------------------------------
+     STOCKROOM PAGE
+     -----------------------------------------
+    */
     @GetMapping("/{sessionId}")
-    public String stockroomPage(@PathVariable Long sessionId, Model model) {
+    public String stockroomPage(
+            @PathVariable Long sessionId,
+            Model model
+    ) {
+
         Long barId = SecurityUtils.getBarId();
+
         List<StockroomInventory> stocks =
-                stockroomService.getStockroomByBarAndSession(barId, sessionId);
+                stockroomService
+                        .getStockroomByBarAndSession(
+                                barId,
+                                sessionId
+                        );
+
         model.addAttribute("stocks", stocks);
+
         model.addAttribute("sessionId", sessionId);
+
         model.addAttribute("barId", barId);
+
         return "stockroom/stockroom-inventory";
     }
 
-    // POST /stockroom/closing/{sessionId}
+    /*
+     -----------------------------------------
+     UPDATE CLOSING
+     -----------------------------------------
+    */
     @PostMapping("/closing/{sessionId}")
     public String updateClosing(
+
             @PathVariable Long sessionId,
-            @RequestParam List<Long> brandId,
+
+            @RequestParam List<Long> brandSizeId,
+
             @RequestParam List<Integer> closingStock
     ) {
+
         Long barId = SecurityUtils.getBarId();
 
-        List<StockroomClosingRequest> requests = new ArrayList<>();
-        for (int i = 0; i < brandId.size(); i++) {
-            StockroomClosingRequest req = new StockroomClosingRequest();
-            req.setBrandId(brandId.get(i));
-            req.setClosingStock(closingStock.get(i));
+        List<StockroomClosingRequest> requests =
+                new ArrayList<>();
+
+        for (int i = 0; i < brandSizeId.size(); i++) {
+
+            StockroomClosingRequest req =
+                    new StockroomClosingRequest();
+
+            req.setBrandSizeId(
+                    brandSizeId.get(i)
+            );
+
+            req.setClosingStock(
+                    closingStock.get(i)
+            );
+
             requests.add(req);
         }
 
-        // ✅ actually save — was missing before
-        stockroomService.updateStockroomClosing(barId, sessionId, requests);
+        stockroomService.updateStockroomClosing(
+                barId,
+                sessionId,
+                requests
+        );
 
-        return "redirect:/distribution/create-page/" + sessionId;
+        return "redirect:/distribution/create-page/"
+                + sessionId;
     }
 }

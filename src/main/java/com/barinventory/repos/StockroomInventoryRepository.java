@@ -16,8 +16,11 @@ public interface StockroomInventoryRepository
 	
 	List<StockroomInventory> findBySessionSessionId(Long sessionId);
 	
-	Optional<StockroomInventory> 
-	findBySessionSessionIdAndBrandBrandId(Long sessionId, Long brandId);
+	Optional<StockroomInventory>
+	findBySessionSessionIdAndBrandSizeBrandSizeId(
+	        Long sessionId,
+	        Long brandSizeId
+	);
 	
 	@Query("""
 			SELECT s
@@ -35,27 +38,26 @@ public interface StockroomInventoryRepository
 			List<StockroomInventory> findDistributableStocks(Long sessionId);
 	
 	@Query("""
-			SELECT s
-			FROM StockroomInventory s
-			JOIN FETCH s.brand
-			WHERE s.session.sessionId = :sessionId
-			""")
-			List<StockroomInventory> findBySessionWithBrand(Long sessionId);
+	        SELECT s
+	        FROM StockroomInventory s
+	        JOIN FETCH s.brandSize bs
+	        JOIN FETCH bs.brand
+	        WHERE s.session.sessionId = :sessionId
+	        """)
+	List<StockroomInventory> findBySessionWithBrandSize(Long sessionId);
 	
 	List<StockroomInventory> findByBarBarIdAndSessionSessionId(Long barId, Long sessionId);
 	
-	boolean existsByBarBarIdAndSessionSessionIdAndBrandBrandId(
+	boolean existsByBarBarIdAndSessionSessionIdAndBrandSizeBrandSizeId(
 	        Long barId,
 	        Long sessionId,
-	        Long brandId
+	        Long brandSizeId
 	);
-	
 	Optional<StockroomInventory>
-	findByBarBarIdAndSessionSessionIdAndBrandBrandId(
+	findByBarBarIdAndSessionSessionIdAndBrandSizeBrandSizeId(
 	        Long barId,
 	        Long sessionId,
-	        Long brandId
+	        Long brandSizeId
 	);
-	 
 
 }

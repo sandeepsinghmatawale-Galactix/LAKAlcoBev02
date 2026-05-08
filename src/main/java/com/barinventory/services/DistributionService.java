@@ -1,7 +1,10 @@
 package com.barinventory.services;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
@@ -10,7 +13,12 @@ import com.barinventory.entities.Distribution;
 import com.barinventory.entities.InventorySession;
 import com.barinventory.entities.StockroomInventory;
 import com.barinventory.entities.WellDistribution;
-import com.barinventory.repos.*;
+import com.barinventory.repos.BrandSizeRepository;
+import com.barinventory.repos.DistributionRepository;
+import com.barinventory.repos.InventorySessionRepository;
+import com.barinventory.repos.StockroomInventoryRepository;
+import com.barinventory.repos.WellDistributionRepository;
+import com.barinventory.repos.WellRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -21,40 +29,48 @@ import lombok.RequiredArgsConstructor;
 public class DistributionService {
 
 	private final DistributionRepository distributionRepo;
+
 	private final WellDistributionRepository wellDistributionRepo;
+
 	private final StockroomInventoryRepository stockroomRepo;
+
 	private final WellRepository wellRepo;
-	private final BrandRepository brandRepo;
+
+	private final BrandSizeRepository brandSizeRepo;
+
 	private final InventorySessionRepository sessionRepo;
 
 	/*
-	 * CREATE DISTRIBUTION
+	 * ----------------------------------------- CREATE DISTRIBUTION
+	 * -----------------------------------------
 	 */
 	public Distribution createDistribution(Long barId, Long sessionId) {
-	    InventorySession session = sessionRepo.findById(sessionId)
-	            .orElseThrow(() -> new RuntimeException("Session not found: " + sessionId));
 
-	    // ✅ bar ownership check
-	    if (!session.getBar().getBarId().equals(barId)) {
-	        throw new RuntimeException("Session does not belong to this bar");
-	    }
+		InventorySession session = sessionRepo.findById(sessionId)
+				.orElseThrow(() -> new RuntimeException("Session not found"));
 
-	    Distribution distribution = new Distribution();
-	    distribution.setSession(session);
-	    distribution.setDistributedAt(LocalDateTime.now());
+		if (!session.getBar().getBarId().equals(barId)) {
 
-	    return distributionRepo.save(distribution);
+			throw new RuntimeException("Session does not belong to this bar");
+		}
+
+		Distribution distribution = new Distribution();
+
+		distribution.setSession(session);
+
+		distribution.setDistributedAt(LocalDateTime.now());
+
+		return distributionRepo.save(distribution);
 	}
 
 	/*
-	 * MAIN METHOD (SCALABLE + SAFE)
+	 * ----------------------------------------- MAIN DISTRIBUTION
+	 * -----------------------------------------
 	 */
 	public void distributeStock(Long distributionId, List<DistributionRequest> requests) {
 
-		// ✅ STEP 1: INPUT VALIDATION (NO DB)
 		validateInput(requests);
 
-		// ✅ STEP 2: LOAD REQUIRED DATA (MIN DB CALLS)
 		Distribution distribution = distributionRepo.findById(distributionId)
 				.orElseThrow(() -> new RuntimeException("Distribution not found"));
 
@@ -62,88 +78,76 @@ public class DistributionService {
 
 		List<StockroomInventory> stocks = stockroomRepo.findDistributableStocks(sessionId);
 
-		// ✅ STEP 3: PRE-VALIDATION (IN MEMORY)
 		validateAgainstStock(requests, stocks);
 
-		// ✅ STEP 4: PREPARE BATCH (NO DB HIT)
 		List<WellDistribution> batchList = prepareBatch(requests, distribution);
 
-		// ✅ STEP 5: WRITE TO DB (ATOMIC)
 		wellDistributionRepo.deleteByDistributionId(distributionId);
+
 		wellDistributionRepo.saveAll(batchList);
 
-		// After saveAll, force flush before validation
+		wellDistributionRepo.flush();
 
-		wellDistributionRepo.flush(); // ADD THIS
-  System.out.println("wellDistributionRepo.flush is done");
-		// ✅ STEP 6: FINAL DB VALIDATION (KEEP YOUR ORIGINAL LOGIC)
 		validateDistribution(sessionId, distributionId);
-System.out.println("validateDistribtuion done");
 	}
 
 	/*
-	 * 🚫 BASIC INPUT VALIDATION
+	 * ----------------------------------------- INPUT VALIDATION
+	 * -----------------------------------------
 	 */
 	private void validateInput(List<DistributionRequest> requests) {
+	    if (requests == null || requests.isEmpty()) {
+	        throw new RuntimeException("No distribution data submitted");
+	    }
 
-		if (requests == null || requests.isEmpty()) {
-			throw new RuntimeException("No distribution data submitted");
-		}
-
-		for (DistributionRequest r : requests) {
-
-			if (r.getDistributedQty() == null || r.getDistributedQty() <= 0)
-				continue;
-
-			if (r.getBrandId() == null) {
-				throw new RuntimeException("Brand ID missing");
-			}
-
-			if (r.getWellId() == null) {
-				throw new RuntimeException("Well ID missing");
-			}
-
-			if (r.getDistributedQty() < 0) {
-				throw new RuntimeException("Negative quantity not allowed");
-			}
-		}
+	    for (DistributionRequest r : requests) {
+	        if (r.getDistributedQty() == null || r.getDistributedQty() <= 0) continue;
+	        if (r.getBrandSizeId() == null || r.getBrandSizeId() == 0) continue;
+	        if (r.getWellId() == null || r.getWellId() == 0) continue;
+	        if (r.getDistributedQty() < 0) {
+	            throw new RuntimeException("Negative quantity not allowed");
+	        }
+	    }
 	}
 
 	/*
-	 * 🧠 PRE-VALIDATION (NO DB WRITE)
+	 * ----------------------------------------- STOCK VALIDATION
+	 * -----------------------------------------
 	 */
 	private void validateAgainstStock(List<DistributionRequest> requests, List<StockroomInventory> stocks) {
-
 		Map<Long, Integer> totalMap = new HashMap<>();
 
 		for (DistributionRequest r : requests) {
-
 			if (r.getDistributedQty() == null || r.getDistributedQty() <= 0)
 				continue;
-
-			totalMap.merge(r.getBrandId(), r.getDistributedQty(), Integer::sum);
+			if (r.getBrandSizeId() == null || r.getBrandSizeId() == 0)
+				continue;
+			totalMap.merge(r.getBrandSizeId(), r.getDistributedQty(), Integer::sum);
 		}
 
+		System.out.println("totalMap: " + totalMap);
+
 		for (StockroomInventory stock : stocks) {
-
-			Integer saleStock = stock.getSaleStock();
-
-			if (saleStock == null || saleStock == 0)
+			if (stock.getSaleStock() == null || stock.getSaleStock() == 0)
 				continue;
 
-			Long brandId = stock.getBrand().getBrandId();
+			Long brandSizeId = stock.getBrandSize().getBrandSizeId();
+			int actual = totalMap.getOrDefault(brandSizeId, 0);
 
-			int actual = totalMap.getOrDefault(brandId, 0);
+			System.out
+					.println("BrandSizeId=" + brandSizeId + " | Expected=" + stock.getSaleStock() + " | Got=" + actual);
 
-			if (actual != saleStock) {
-				throw new RuntimeException("❌ Distribution mismatch for brand: " + stock.getBrand().getBrandName()
-						+ " | Expected: " + saleStock + " | Got: " + actual);
+			if (actual != stock.getSaleStock()) {
+				throw new RuntimeException("Distribution mismatch for " + stock.getBrandSize().getBrand().getBrandName()
+						+ " " + stock.getBrandSize().getSizeMl() + "ml" + " | Expected=" + stock.getSaleStock()
+						+ " | Got=" + actual);
 			}
 		}
 	}
 
 	/*
-	 * ⚡ PREPARE BATCH (SCALABLE)
+	 * ----------------------------------------- PREPARE BATCH
+	 * -----------------------------------------
 	 */
 	private List<WellDistribution> prepareBatch(List<DistributionRequest> requests, Distribution distribution) {
 
@@ -151,20 +155,26 @@ System.out.println("validateDistribtuion done");
 
 		for (DistributionRequest r : requests) {
 
-			if (r.getDistributedQty() == null || r.getDistributedQty() <= 0)
+			if (r.getDistributedQty() == null || r.getDistributedQty() <= 0) {
+
 				continue;
-			if (r.getBrandId() == null || r.getWellId() == null)
+			}
+
+			if (r.getBrandSizeId() == null || r.getWellId() == null) {
+
 				continue;
+			}
 
 			WellDistribution wd = new WellDistribution();
 
 			wd.setDistribution(distribution);
 
-			// 🚀 No DB hit (lazy reference)
-			wd.setBrand(brandRepo.getReferenceById(r.getBrandId()));
+			wd.setBrandSize(brandSizeRepo.getReferenceById(r.getBrandSizeId()));
+
 			wd.setWell(wellRepo.getReferenceById(r.getWellId()));
 
 			wd.setDistributedQty(r.getDistributedQty());
+
 			wd.setDistributedAt(LocalDateTime.now());
 
 			list.add(wd);
@@ -174,7 +184,8 @@ System.out.println("validateDistribtuion done");
 	}
 
 	/*
-	 * 🔥 FINAL VALIDATION (DB CHECK - YOUR ORIGINAL LOGIC KEPT)
+	 * ----------------------------------------- FINAL VALIDATION
+	 * -----------------------------------------
 	 */
 	private void validateDistribution(Long sessionId, Long distributionId) {
 
@@ -182,25 +193,33 @@ System.out.println("validateDistribtuion done");
 
 		for (StockroomInventory stock : stocks) {
 
-			if (stock.getSaleStock() == null || stock.getSaleStock() == 0)
+			if (stock.getSaleStock() == null || stock.getSaleStock() == 0) {
+
 				continue;
+			}
 
 			Integer distributedQty = wellDistributionRepo.getTotalDistributedQty(distributionId,
-					stock.getBrand().getBrandId());
+					stock.getBrandSize().getBrandSizeId());
 
-			if (distributedQty == null)
+			if (distributedQty == null) {
 				distributedQty = 0;
+			}
 
 			if (!distributedQty.equals(stock.getSaleStock())) {
-				throw new RuntimeException("❌ Final validation failed for brand: " + stock.getBrand().getBrandName());
+
+				throw new RuntimeException(
+						"Final validation failed for " + stock.getBrandSize().getBrand().getBrandName() + " "
+								+ stock.getBrandSize().getSizeMl() + "ml");
 			}
 		}
 	}
 
 	/*
-	 * GET SESSION ID
+	 * ----------------------------------------- GET SESSION ID
+	 * -----------------------------------------
 	 */
 	public Long getSessionIdByDistribution(Long distributionId) {
+
 		return distributionRepo.findById(distributionId).map(d -> d.getSession().getSessionId())
 				.orElseThrow(() -> new RuntimeException("Distribution not found"));
 	}

@@ -16,40 +16,39 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name="well_inventory")
+@Table(name = "well_inventory")
 @Getter
 @Setter
 public class WellInventory {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long wellInventoryId;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long wellInventoryId;
 
-    @ManyToOne
-    @JoinColumn(name="session_id")
-    private InventorySession session;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "bar_id", nullable = false)
-    private Bar bar;
+	@ManyToOne
+	@JoinColumn(name = "session_id")
+	private InventorySession session;
 
-    @ManyToOne
-    @JoinColumn(name="well_id")
-    private Well well;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "bar_id", nullable = false)
+	private Bar bar;
 
-    @ManyToOne
-    @JoinColumn(name="brand_id")
-    private Brand brand;
+	@ManyToOne
+	@JoinColumn(name = "well_id")
+	private Well well;
 
-    private Integer openingStock;
-    private Integer receivedStock;
-    private Integer closingStock;
-    private Integer saleStock;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "brand_size_id", nullable = false)
+	private BrandSize brandSize;
 
-    private BigDecimal amount;
-    
-    @Enumerated(EnumType.STRING)
-    private InventoryStatus status;
-    
-    
+	private Integer openingStock;
+	private Integer receivedStock;
+	private Integer closingStock;
+	private Integer saleStock;
+
+	private BigDecimal amount;
+
+	@Enumerated(EnumType.STRING)
+	private InventoryStatus status;
+
 }

@@ -6,6 +6,6 @@ import lombok.Data;
 public class WellClosingRequest {
 
     private Long wellId;
-    private Long brandId;
+    private Long brandSizeId;
     private Integer closingStock;
 }

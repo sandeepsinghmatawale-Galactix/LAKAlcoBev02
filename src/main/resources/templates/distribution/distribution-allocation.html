@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <title>Distribution</title>
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <style>
-        .remaining-ok { background-color: #d4edda; }
+        .remaining-ok  { background-color: #d4edda; }
         .remaining-bad { background-color: #f8d7da; }
         .sticky-header th {
             position: sticky;
@@ -16,26 +15,19 @@
             z-index: 10;
         }
     </style>
-
     <script>
         function validateRow(row) {
             let available = parseInt(row.querySelector('.available').value) || 0;
-            let inputs = row.querySelectorAll('.qty');
-            let total = 0;
+            let inputs    = row.querySelectorAll('.qty');
+            let total     = 0;
 
             inputs.forEach(input => {
                 let val = parseInt(input.value) || 0;
-
-                if (val > available) {
-                    input.value = available;
-                    val = available;
-                }
-
+                if (val > available) { input.value = available; val = available; }
                 total += val;
             });
 
-            let remaining = available - total;
-
+            let remaining      = available - total;
             let remainingField = row.querySelector('.remaining');
             remainingField.value = remaining;
 
@@ -56,10 +48,9 @@
         }
 
         function validateForm() {
-            let rows = document.querySelectorAll("tbody tr");
+            let rows      = document.querySelectorAll("tbody tr");
             let submitBtn = document.getElementById("submitBtn");
-
-            let valid = true;
+            let valid     = true;
 
             rows.forEach(row => {
                 let remaining = parseInt(row.querySelector('.remaining').value) || 0;
@@ -86,18 +77,19 @@
     <!-- Toast -->
     <div id="toastMsg"
          style="display:none; position:fixed; top:20px; right:20px;
-         background:#dc3545; color:white; padding:10px 20px; border-radius:5px;">
+                background:#dc3545; color:white; padding:10px 20px; border-radius:5px;">
     </div>
 
     <div class="card shadow p-4">
+
         <h2>Allocate Stock To Wells</h2>
 
-        <!-- Error -->
+        <!-- ERROR -->
         <div th:if="${error}" class="alert alert-danger">
             <span th:text="${error}"></span>
         </div>
 
-        <!-- FORM START -->
+        <!-- FORM -->
         <form th:action="@{/distribution/allocate/{id}(id=${distributionId})}"
               th:object="${wrapper}"
               method="post"
@@ -111,59 +103,75 @@
 
             <div style="overflow-x:auto;">
                 <table class="table table-bordered">
+
                     <thead class="table-dark sticky-header">
                     <tr>
                         <th>Brand</th>
+                        <th>Size</th>
                         <th>Available</th>
                         <th>Remaining</th>
-                        <th th:each="well : ${wells}"
-                            th:text="${well.wellName}">
-                        </th>
+                        <th th:each="well : ${wells}" th:text="${well.wellName}"></th>
                     </tr>
                     </thead>
 
                     <tbody>
-                    <tr th:each="brand, bStat : ${brands}">
 
-                        <!-- Brand -->
-                        <td th:text="${brand.brandName}"></td>
+                    <!-- BRAND LOOP -->
+                    <th:block th:each="brand, bStat : ${brands}">
 
-                        <!-- Available -->
-                        <td>
-                            <input type="text"
-                                   class="form-control available"
-                                   th:value="${stockMap[brand.brandId] != null ? stockMap[brand.brandId] : 0}"
-                                   readonly>
-                        </td>
+                        <!-- SIZE LOOP -->
+                        <th:block th:each="size, sStat : ${brand.brandSizes}">
 
-                        <!-- Remaining -->
-                        <td>
-                            <input type="text"
-                                   class="form-control remaining"
-                                   th:value="${stockMap[brand.brandId] != null ? stockMap[brand.brandId] : 0}"
-                                   readonly>
-                        </td>
+                            <tr>
 
-                        <!-- Wells -->
-                        <td th:each="well, wStat : ${wells}"
-                            th:with="idx=${bStat.index * wells.size() + wStat.index}">
+                                <!-- BRAND NAME -->
+                                <td th:text="${brand.brandName}"></td>
 
-                            <!-- ✅ CORRECT binding -->
-							<input type="hidden"
-							       th:field="*{requests[__${idx}__].brandId}" />
+                                <!-- SIZE -->
+                                <td th:text="${size.sizeMl + ' ML'}"></td>
 
-							<input type="hidden"
-							       th:field="*{requests[__${idx}__].wellId}" />
+                                <!-- AVAILABLE -->
+                                <td>
+                                    <input type="text"
+                                           class="form-control available"
+                                           th:value="${stockMap.containsKey(size.brandSizeId) ? stockMap[size.brandSizeId] : 0}"
+                                           readonly>
+                                </td>
 
-                            <input type="number"
-                                   class="form-control qty"
-                                   th:field="*{requests[__${idx}__].distributedQty}"
-                                   min="0"
-                                   inputmode="numeric"
-                                   oninput="validateRow(this.closest('tr'))">
-                        </td>
+                                <!-- REMAINING -->
+                                <td>
+                                    <input type="text"
+                                           class="form-control remaining"
+                                           th:value="${stockMap.containsKey(size.brandSizeId) ? stockMap[size.brandSizeId] : 0}"
+                                           readonly>
+                                </td>
 
-                    </tr>
+                                <!-- WELL COLUMNS -->
+								<td th:each="well, wStat : ${wells}"
+								    th:with="idx=${indexMap[size.brandSizeId + '_' + well.wellId]}">
+                                    <input type="hidden"
+                                           th:field="*{requests[__${idx}__].brandSizeId}"
+                                           th:value="${size.brandSizeId}"/>
+
+                                    <input type="hidden"
+                                           th:field="*{requests[__${idx}__].wellId}"
+                                           th:value="${well.wellId}"/>
+
+                                    <input type="number"
+                                           class="form-control qty"
+                                           th:field="*{requests[__${idx}__].distributedQty}"
+                                           min="0"
+                                           value="0"
+                                           oninput="validateRow(this.closest('tr'))"/>
+
+                                </td>
+
+                            </tr>
+
+                        </th:block>
+
+                    </th:block>
+
                     </tbody>
                 </table>
             </div>
@@ -175,7 +183,6 @@
             </button>
 
         </form>
-        <!-- FORM END -->
 
     </div>
 </div>

@@ -3,6 +3,7 @@ package com.barinventory.entities;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -31,9 +32,9 @@ public class WellDistribution {
     @JoinColumn(name="well_id")
     private Well well;
 
-    @ManyToOne
-    @JoinColumn(name="brand_id")
-    private Brand brand;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "brand_size_id", nullable = false)
+    private BrandSize brandSize;
 
     private Integer distributedQty;
 

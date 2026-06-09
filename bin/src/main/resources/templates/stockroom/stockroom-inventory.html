@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Stockroom Inventory</title>
+    <meta charset="UTF-8">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <script>
+        function calculateSale(row) {
+
+            let opening =
+                parseInt(row.querySelector('.opening').value) || 0;
+
+            let received =
+                parseInt(row.querySelector('.received').value) || 0;
+
+            let closing =
+                parseInt(row.querySelector('.closing').value) || 0;
+
+            row.querySelector('.sale').value =
+                (opening + received) - closing;
+        }
+    </script>
+</head>
+
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark">
+    <div class="container-fluid">
+        <span class="navbar-brand">
+            Stockroom Closing Entry
+        </span>
+    </div>
+</nav>
+
+<div class="container mt-5">
+
+    <div class="card shadow p-4">
+
+        <h2 class="mb-4">
+            Stockroom Closing Entry
+        </h2>
+
+        <form th:action="@{/stockroom/closing/{sessionId}(sessionId=${sessionId})}"
+              method="post">
+
+            <table class="table table-bordered table-striped">
+
+                <thead class="table-dark">
+
+                <tr>
+                    <th>Brand</th>
+                    <th>Size</th>
+                    <th>Opening</th>
+                    <th>Received</th>
+                    <th>Closing</th>
+                    <th>Sale</th>
+                </tr>
+
+                </thead>
+
+                <tbody>
+
+                <tr th:each="stock : ${stocks}">
+
+                    <!-- BRAND -->
+                    <td>
+                        <span th:text="${stock.brandSize.brand.brandName}"></span>
+
+                        <input type="hidden"
+                               name="brandSizeId"
+                               th:value="${stock.brandSize.brandSizeId}">
+                    </td>
+
+                    <!-- SIZE -->
+                    <td>
+                        <span th:text="${stock.brandSize.sizeMl + ' ML'}"></span>
+                    </td>
+
+                    <!-- OPENING -->
+                    <td>
+                        <input type="text"
+                               class="form-control opening"
+                               th:value="${stock.openingStock}"
+                               readonly>
+                    </td>
+
+                    <!-- RECEIVED -->
+                    <td>
+                        <input type="text"
+                               class="form-control received"
+                               th:value="${stock.receivedStock}"
+                               readonly>
+                    </td>
+
+                    <!-- CLOSING -->
+                    <td>
+                        <input type="number"
+                               class="form-control closing"
+                               name="closingStock"
+                               onkeyup="calculateSale(this.closest('tr'))"
+                               required>
+                    </td>
+
+                    <!-- SALE -->
+                    <td>
+                        <input type="text"
+                               class="form-control sale"
+                               readonly>
+                    </td>
+
+                </tr>
+
+                </tbody>
+
+            </table>
+
+            <button class="btn btn-success w-100">
+                Submit Stockroom Closing
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>

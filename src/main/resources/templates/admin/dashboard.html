@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Control Panel & Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f6f9; color: #333; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .stats-container { display: flex; gap: 20px; margin-top: 20px; margin-bottom: 40px; }
+        .card { flex: 1; background: white; border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card h3 { margin: 0 0 10px 0; color: #666; font-size: 14px; text-transform: uppercase; }
+        .card p { margin: 0; font-size: 28px; font-weight: bold; color: #1a73e8; }
+        
+        /* Interactive Controls Styling */
+        .btn-action-trigger { background-color: #34a853; color: white; border: none; padding: 12px 24px; font-size: 15px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 25px; transition: background 0.2s; }
+        .btn-action-trigger:hover { background-color: #2d8e47; }
+        
+        /* Form Collapsible Section container */
+        .form-section { display: none; background: white; padding: 30px; border-radius: 8px; border: 1px solid #e0e0e0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 600px; margin-bottom: 40px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .btn-submit { background-color: #1a73e8; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
+        .btn-submit:hover { background-color: #1557b0; }
+        .alert-success { background-color: #d4edda; color: #155724; padding: 15px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #c3e6cb; }
+    </style>
+    <script>
+        // Toggles visibility of the entire creation flow panel
+        function toggleOnboardingPanel() {
+            const panel = document.getElementById("onboardingFormPanel");
+            if (panel.style.display === "none" || panel.style.display === "") {
+                panel.style.display = "block";
+                panel.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                panel.style.display = "none";
+            }
+        }
+
+        // Toggles calendar execution windows dynamically if CUSTOM is chosen
+        function toggleCustomCalendarWindows() {
+            const selectedType = document.getElementById("trialTypeField").value;
+            const calendarWrapper = document.getElementById("customCalendarWrapper");
+            if (selectedType === "CUSTOM") {
+                calendarWrapper.style.display = "block";
+                document.getElementById("startDateInput").required = true;
+                document.getElementById("endDateInput").required = true;
+            } else {
+                calendarWrapper.style.display = "none";
+                document.getElementById("startDateInput").required = false;
+                document.getElementById("endDateInput").required = false;
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1>Global Management Console</h1>
+            <p>Monolith Control Engine v1.0</p>
+        </div>
+        <nav>
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" style="background: #ea4335; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;">Secure Logout</button>
+            </form>
+        </nav>
+    </header>
+
+    <main>
+        <div class="alert-success" th:if="${param.success}">
+            <strong>Success!</strong> New Bar profile initialized and secure infrastructure provisioned instantly.
+        </div>
+
+        <h2>System Performance Tracking</h2>
+        <div class="stats-container">
+            <div class="card">
+                <h3>Total Provisioned Bars</h3>
+                <p th:text="${stats != null ? stats.totalBars : 0}">0</p>
+            </div>
+            <div class="card">
+                <h3>Total Tracked Brands</h3>
+                <p th:text="${stats != null ? stats.totalBrands : 0}">0</p>
+            </div>
+            <div class="card">
+                <h3>Active Premium Subscriptions</h3>
+                <p th:text="${stats != null ? stats.activeSubscriptions : 0}">0</p>
+            </div>
+        </div>
+
+        <button type="button" class="btn-action-trigger" onclick="toggleOnboardingPanel()">
+            ➕ Onboard New Bar & Subscription
+        </button>
+
+        <div id="onboardingFormPanel" class="form-section">
+            <h2>Provision New Bar Architecture</h2>
+            <p style="color: #666; font-size: 13px; margin-bottom: 20px;">
+                Creates a persistent Bar record, maps a secure Master Business Owner identity profile, and deploys timed subscription parameters within a atomic database scope.
+            </p>
+            
+			<form th:action="@{/admin/onboard}" th:object="${onboardRequest}" method="post" autocomplete="off">
+			    
+			    <input type="text" style="display:none;" aria-hidden="true" />
+			    <input type="password" style="display:none;" aria-hidden="true" />
+
+			    <div class="form-group">
+			        <label>Enterprise Bar/Store Name:</label>
+			        <input type="text" th:field="*{storeName}" placeholder="e.g., Downtown Lounge" autocomplete="off" required />
+			    </div>
+
+			    <div class="form-group">
+			        <label>New Store Master Username/Email:</label>
+			        <input type="text" th:field="*{adminUsername}" placeholder="e.g., manager_downtown" autocomplete="new-password" required />
+			    </div>
+
+			    <div class="form-group">
+			        <label>Secure Master Password:</label>
+			        <input type="password" th:field="*{adminPassword}" placeholder="••••••••" autocomplete="new-password" required />
+			    </div>
+
+			    <div class="form-group">
+			        <label>Subscription & Trial Policies:</label>
+			        <select id="trialTypeField" th:field="*{trialType}" onchange="toggleCustomCalendarWindows()">
+			            <option value="WEEKLY">Weekly Free Trial (7 Days)</option>
+			            <option value="MONTHLY">Standard Monthly Window (30 Days)</option>
+			            <option value="THREE_MONTH">Quarterly Access Pass (90 Days)</option>
+			            <option value="YEARLY">Enterprise Annual Tier (365 Days)</option>
+			            <option value="CUSTOM">Custom Tailored Allocation (Pick Dates)</option>
+			        </select>
+			    </div>
+
+			    <div id="customCalendarWrapper" style="display: none; border-left: 4px solid #1a73e8; padding-left: 15px; margin: 20px 0;">
+			        <div class="form-group">
+			            <label>Target Activation Window Start:</label>
+			            <input type="datetime-local" id="startDateInput" th:field="*{customStartDate}" />
+			        </div>
+			        <div class="form-group">
+			            <label>Target Activation Window Expiration:</label>
+			            <input type="datetime-local" id="endDateInput" th:field="*{customEndDate}" />
+			        </div>
+			    </div>
+
+			    <button type="submit" class="btn-submit">Deploy Infrastructure Package</button>
+			</form>
+        </div>
+    </main>
+
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Store Onboarding</title>
+    <script>
+        function toggleCustomDates() {
+            const trialType = document.getElementById("trialType").value;
+            const customDateSection = document.getElementById("customDateSection");
+            if (trialType === "CUSTOM") {
+                customDateSection.style.display = "block";
+            } else {
+                customDateSection.style.display = "none";
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Onboard New Store Profile</h1>
+    <form th:action="@{/admin/onboard}" th:object="${onboardRequest}" method="post">
+        <div>
+            <label>Store Name:</label>
+            <input type="text" th:field="*{storeName}" required />
+        </div>
+        <div>
+            <label>Master Username:</label>
+            <input type="text" th:field="*{adminUsername}" required />
+        </div>
+        <div>
+            <label>Master Password:</label>
+            <input type="password" th:field="*{adminPassword}" required />
+        </div>
+        <div>
+            <label>Subscription Assignment Configuration:</label>
+            <select id="trialType" th:field="*{trialType}" onchange="toggleCustomDates()">
+                <option value="WEEKLY">Weekly Trial</option>
+                <option value="MONTHLY">Monthly Trial</option>
+                <option value="THREE_MONTH">3 Month Trial</option>
+                <option value="YEARLY">Yearly Trial</option>
+                <option value="CUSTOM">Custom Date Window</option>
+            </select>
+        </div>
+        
+        <div id="customDateSection" style="display: none;">
+            <div>
+                <label>Target Activation Window Start:</label>
+                <input type="datetime-local" th:field="*{customStartDate}" />
+            </div>
+            <div>
+                <label>Target Activation Window End:</label>
+                <input type="datetime-local" th:field="*{customEndDate}" />
+            </div>
+        </div>
+        
+        <button type="submit">Deploy Store Infrastructure</button>
+    </form>
+</body>
+</html>

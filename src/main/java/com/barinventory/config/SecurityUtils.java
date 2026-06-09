@@ -2,7 +2,7 @@ package com.barinventory.config;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.barinventory.services.CustomUserDetails;
+import com.barinventory.auth.servcies.CustomUserDetails;
 
 public class SecurityUtils {
 

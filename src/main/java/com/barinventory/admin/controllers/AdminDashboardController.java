@@ -29,7 +29,7 @@ import com.barinventory.subscriptions.repository.SubscriptionRepository;
 import lombok.RequiredArgsConstructor;
  
 
-@Controller
+ 
 @RequiredArgsConstructor
 public class AdminDashboardController {
  private final AdminOnboardingService onboardingService;

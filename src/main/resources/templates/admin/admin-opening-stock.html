@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Opening Stock Entry</title>
+
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; margin: 0; background: #f4f6f9; color: #333; }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            background: white; padding: 16px 30px; border-bottom: 2px solid #ddd;
+        }
+
+        header h1 { margin: 0; font-size: 20px; }
+        header p { margin: 2px 0 0; font-size: 12px; color: #999; }
+        main { padding: 30px; }
+
+        .btn-primary { background: #1a73e8; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
+        .btn-primary:hover { background: #1557b0; }
+
+        .btn-success { background: #34a853; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
+        .btn-warning { background: #fbbc04; color: #333; border: none; padding: 10px 18px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-danger { background: #ea4335; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
+
+        .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid #ddd; }
+        .tab-btn { padding: 10px 20px; border: none; background: none; cursor: pointer; font-size: 14px; font-weight: bold; color: #666; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+        .tab-btn.active { color: #1a73e8; border-bottom-color: #1a73e8; }
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; }
+
+        .card {
+            background: white; border-radius: 8px; border: 1px solid #e0e0e0;
+            padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .toolbar { display: flex; gap: 12px; margin-bottom: 20px; align-items: center; }
+        .toolbar input {
+            flex: 1; padding: 10px 14px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;
+        }
+
+        .sku-row {
+            display: grid;
+            grid-template-columns: 2fr 90px 100px 120px 120px 120px 40px;
+            gap: 8px; align-items: center; margin-bottom: 8px;
+        }
+
+        .well-row {
+            display: grid;
+            grid-template-columns: 2fr 120px 40px;
+            gap: 8px; align-items: center; margin-bottom: 8px;
+        }
+
+        .sku-header {
+            display: grid;
+            grid-template-columns: 2fr 90px 100px 120px 120px 120px 40px;
+            gap: 8px; margin-bottom: 8px;
+            font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase;
+        }
+
+        .well-header {
+            display: grid;
+            grid-template-columns: 2fr 120px 40px;
+            gap: 8px; margin-bottom: 8px;
+            font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase;
+        }
+
+        select, input {
+            padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; width: 100%;
+        }
+
+        select:focus, input:focus { outline: none; border-color: #1a73e8; }
+
+        .add-row-btn {
+            background: #f1f8e9; color: #34a853; border: 1px dashed #34a853;
+            border-radius: 4px; padding: 8px 14px; cursor: pointer; font-size: 13px; font-weight: bold;
+        }
+
+        .well-block {
+            background: #fafafa; border: 1px solid #e0e0e0; border-radius: 6px;
+            padding: 16px; margin-bottom: 14px;
+        }
+
+        .well-block h3 { margin: 0 0 12px; font-size: 15px; }
+
+        .summary {
+            background: #e8f0fe; color: #1a73e8; padding: 14px 18px;
+            border-radius: 6px; font-weight: bold; margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #e6f4ea; color: #2d8e47; padding: 14px 20px;
+            border-radius: 6px; margin-bottom: 20px; border: 1px solid #ceead6;
+            font-weight: bold; display: none;
+        }
+
+        .alert-error {
+            background: #fce8e6; color: #c5221f; padding: 14px 20px;
+            border-radius: 6px; margin-bottom: 20px; border: 1px solid #f5c6c2;
+            font-weight: bold; display: none;
+        }
+
+        .success-actions { display: none; gap: 12px; margin-top: 15px; }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div>
+        <h1>📦 Opening Stock Entry</h1>
+        <p>
+            Bar:
+            <strong th:text="${bar.barName}">Bar Name</strong>
+            · ID:
+            <strong id="barIdText" th:text="${bar.barId}">0</strong>
+        </p>
+    </div>
+
+    <button type="button" class="btn-warning" onclick="window.location='/admin/dashboard'">
+        ← Back to Dashboard
+    </button>
+</header>
+
+<main>
+    <div id="successMsg" class="alert-success"></div>
+    <div id="errorMsg" class="alert-error"></div>
+
+    <div class="card">
+        <div class="toolbar">
+            <input id="searchInput" type="text" placeholder="Search SKU by brand, size, pack..." oninput="filterCatalog()">
+            <button type="button" class="btn-primary" onclick="loadPageData()">🔄 Reload</button>
+        </div>
+
+        <div class="summary" id="summaryBar">
+            Stockroom SKUs: 0 · Stockroom Units: 0 · Well Units: 0
+        </div>
+
+        <div class="tabs">
+            <button type="button" class="tab-btn active" onclick="switchTab(event, 'stockroom')">Stockroom</button>
+            <button type="button" class="tab-btn" onclick="switchTab(event, 'wells')">Wells</button>
+        </div>
+
+        <div id="tab-stockroom" class="tab-pane active">
+            <div class="sku-header">
+                <span>Brand / SKU</span>
+                <span>Qty</span>
+                <span>Cost</span>
+                <span>Selling</span>
+                <span>Invoice</span>
+                <span>MRP</span>
+                <span></span>
+            </div>
+
+            <div id="stockroomRows"></div>
+
+            <button type="button" class="add-row-btn" onclick="addStockroomRow()">+ Add SKU</button>
+        </div>
+
+        <div id="tab-wells" class="tab-pane">
+            <div id="wellBlocks"></div>
+        </div>
+    </div>
+
+    <button type="button" id="saveBtn" class="btn-primary" onclick="submitOpeningStock()">
+        ✅ Save Opening Stock
+    </button>
+
+    <div id="successActions" class="success-actions">
+        <button type="button" class="btn-success" onclick="window.location='/admin/dashboard'">
+            Back to Dashboard
+        </button>
+    </div>
+</main>
+
+<script>
+    const barId = /*[[${bar.barId}]]*/ 0;
+
+    let catalogItems = [];
+    let filteredCatalogItems = [];
+    let barWells = [];
+    let rowSeq = 0;
+
+    document.addEventListener('DOMContentLoaded', loadPageData);
+
+    function switchTab(event, name) {
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+        document.getElementById('tab-' + name).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    async function loadPageData() {
+        hideMessages();
+
+        try {
+            const [catalogRes, wellsRes] = await Promise.all([
+                fetch('/inventory/catalog'),
+                fetch(`/admin/opening-stock/bars/${barId}/wells`)
+            ]);
+
+            if (!catalogRes.ok) throw new Error('Failed to load catalog.');
+            if (!wellsRes.ok) throw new Error('Failed to load wells.');
+
+            catalogItems = await catalogRes.json();
+            filteredCatalogItems = catalogItems;
+
+            const wellsData = await wellsRes.json();
+            barWells = wellsData.wells || [];
+
+            document.getElementById('stockroomRows').innerHTML = '';
+            document.getElementById('wellBlocks').innerHTML = '';
+            rowSeq = 0;
+
+            addStockroomRow();
+            renderWellBlocks();
+            updateSummary();
+
+        } catch (error) {
+            showError(error.message || 'Failed to load opening stock page.');
+        }
+    }
+
+    function filterCatalog() {
+        const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
+
+        filteredCatalogItems = catalogItems.filter(item => {
+            const text = `${item.brandName || ''} ${item.sizeMl || ''} ${item.packagingType || ''}`.toLowerCase();
+            return text.includes(keyword);
+        });
+
+        refreshStockroomSkuOptions();
+    }
+
+    function catalogOptionsHtml(selectedPackId = '') {
+        let html = '<option value="">-- Select SKU --</option>';
+
+        filteredCatalogItems.forEach(item => {
+            const selected = String(item.packId) === String(selectedPackId) ? 'selected' : '';
+
+            html += `
+                <option value="${escapeHtml(item.packId)}"
+                        data-sizeid="${escapeHtml(item.brandSizeId)}"
+                        data-brand="${escapeHtml(item.brandName)}"
+                        data-size="${escapeHtml(item.sizeMl)}"
+                        data-pack="${escapeHtml(item.packagingType)}"
+                        data-mrp="${escapeHtml(item.mrp ?? '')}"
+                        ${selected}>
+                    ${escapeHtml(item.brandName)} · ${escapeHtml(item.sizeMl)}ml · ${escapeHtml(item.packagingType)}
+                </option>
+            `;
+        });
+
+        return html;
+    }
+
+    function addStockroomRow() {
+        const idx = rowSeq++;
+        const div = document.createElement('div');
+
+        div.className = 'sku-row';
+        div.id = `sr_${idx}`;
+
+        div.innerHTML = `
+            <select id="sr_sku_${idx}" onchange="onStockroomSkuChange(${idx})">
+                ${catalogOptionsHtml()}
+            </select>
+            <input type="number" id="sr_qty_${idx}" min="0" value="0" oninput="updateSummary()">
+            <input type="number" id="sr_cost_${idx}" min="0" step="0.01">
+            <input type="number" id="sr_sell_${idx}" min="0" step="0.01">
+            <input type="text" id="sr_ref_${idx}" placeholder="INV-001">
+            <input type="text" id="sr_mrp_${idx}" disabled>
+            <button type="button" class="btn-danger" onclick="removeRow('sr_${idx}')">×</button>
+        `;
+
+        document.getElementById('stockroomRows').appendChild(div);
+        updateSummary();
+    }
+
+    function onStockroomSkuChange(idx) {
+        const select = document.getElementById(`sr_sku_${idx}`);
+        const option = select.options[select.selectedIndex];
+
+        document.getElementById(`sr_mrp_${idx}`).value = option?.getAttribute('data-mrp') || '';
+        document.getElementById(`sr_sell_${idx}`).value = option?.getAttribute('data-mrp') || '';
+
+        refreshWellSkuOptions();
+        updateSummary();
+    }
+
+    function refreshStockroomSkuOptions() {
+        document.querySelectorAll('#stockroomRows select').forEach(select => {
+            const current = select.value;
+            select.innerHTML = catalogOptionsHtml(current);
+        });
+    }
+
+    function getSelectedStockroomOptions() {
+        const selected = [];
+
+        document.querySelectorAll('#stockroomRows select').forEach(select => {
+            if (select.value) {
+                selected.push(select.options[select.selectedIndex]);
+            }
+        });
+
+        return selected;
+    }
+
+    function selectedStockroomOptionsHtml(selectedPackId = '') {
+        const selectedOptions = getSelectedStockroomOptions();
+
+        if (selectedOptions.length === 0) {
+            return '<option value="">-- Add SKU in Stockroom first --</option>';
+        }
+
+        let html = '<option value="">-- Select SKU --</option>';
+
+        selectedOptions.forEach(option => {
+            const selected = String(option.value) === String(selectedPackId) ? 'selected' : '';
+
+            html += `
+                <option value="${escapeHtml(option.value)}"
+                        data-sizeid="${escapeHtml(option.getAttribute('data-sizeid'))}"
+                        ${selected}>
+                    ${escapeHtml(option.textContent.trim())}
+                </option>
+            `;
+        });
+
+        return html;
+    }
+
+    function renderWellBlocks() {
+        const container = document.getElementById('wellBlocks');
+        container.innerHTML = '';
+
+        if (barWells.length === 0) {
+            container.innerHTML = '<div class="card">No wells found for this bar.</div>';
+            return;
+        }
+
+        barWells.forEach(well => {
+            const block = document.createElement('div');
+            block.className = 'well-block';
+            block.innerHTML = `
+                <h3>🍺 ${escapeHtml(well.wellName)}</h3>
+                <div class="well-header">
+                    <span>SKU</span>
+                    <span>Opening Qty</span>
+                    <span></span>
+                </div>
+                <div id="well_rows_${well.wellId}"></div>
+                <button type="button" class="add-row-btn" onclick="addWellRow(${well.wellId})">+ Add SKU</button>
+            `;
+
+            container.appendChild(block);
+            addWellRow(well.wellId);
+        });
+    }
+
+    function addWellRow(wellId) {
+        const container = document.getElementById(`well_rows_${wellId}`);
+        const idx = container.children.length;
+
+        const div = document.createElement('div');
+        div.className = 'well-row';
+        div.id = `wr_${wellId}_${idx}`;
+
+        div.innerHTML = `
+            <select id="wr_sku_${wellId}_${idx}">
+                ${selectedStockroomOptionsHtml()}
+            </select>
+            <input type="number" id="wr_qty_${wellId}_${idx}" min="0" value="0" oninput="updateSummary()">
+            <button type="button" class="btn-danger" onclick="removeRow('wr_${wellId}_${idx}')">×</button>
+        `;
+
+        container.appendChild(div);
+    }
+
+    function refreshWellSkuOptions() {
+        document.querySelectorAll('#wellBlocks select').forEach(select => {
+            const current = select.value;
+            select.innerHTML = selectedStockroomOptionsHtml(current);
+        });
+    }
+
+    function removeRow(id) {
+        const row = document.getElementById(id);
+        if (row) row.remove();
+
+        refreshWellSkuOptions();
+        updateSummary();
+    }
+
+    function buildPayload() {
+        const stockroomLines = [];
+        const wellLines = [];
+
+        document.querySelectorAll('#stockroomRows .sku-row').forEach(row => {
+            const idx = row.id.replace('sr_', '');
+            const select = document.getElementById(`sr_sku_${idx}`);
+
+            if (!select || !select.value) return;
+
+            const option = select.options[select.selectedIndex];
+            const openingQty = Number(document.getElementById(`sr_qty_${idx}`).value || 0);
+
+            if (openingQty <= 0) return;
+
+            stockroomLines.push({
+                depotPackId: Number(select.value),
+                depotBrandSizeId: Number(option.getAttribute('data-sizeid')),
+                openingQty: openingQty,
+                purchasePricePerUnit: Number(document.getElementById(`sr_cost_${idx}`).value || 0),
+                sellingPrice: Number(document.getElementById(`sr_sell_${idx}`).value || 0),
+                invoiceRefNo: document.getElementById(`sr_ref_${idx}`).value || null,
+                brandName: option.getAttribute('data-brand'),
+                sizeMl: Number(option.getAttribute('data-size')),
+                packagingType: option.getAttribute('data-pack'),
+                mrp: Number(option.getAttribute('data-mrp') || 0)
+            });
+        });
+
+        barWells.forEach(well => {
+            const container = document.getElementById(`well_rows_${well.wellId}`);
+            if (!container) return;
+
+            container.querySelectorAll('.well-row').forEach(row => {
+                const select = row.querySelector('select');
+                const qtyInput = row.querySelector('input[type="number"]');
+
+                if (!select || !select.value) return;
+
+                const option = select.options[select.selectedIndex];
+                const openingQty = Number(qtyInput.value || 0);
+
+                if (openingQty <= 0) return;
+
+                wellLines.push({
+                    wellId: Number(well.wellId),
+                    depotPackId: Number(select.value),
+                    depotBrandSizeId: Number(option.getAttribute('data-sizeid')),
+                    openingQty: openingQty
+                });
+            });
+        });
+
+        return {
+            barId: barId,
+            stockroomLines: stockroomLines,
+            wellLines: wellLines
+        };
+    }
+
+    async function submitOpeningStock() {
+        hideMessages();
+
+        const payload = buildPayload();
+
+        if (payload.stockroomLines.length === 0) {
+            showError('Please add at least one Stockroom SKU with quantity greater than zero.');
+            return;
+        }
+
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = '⏳ Saving...';
+
+        try {
+            const response = await fetch('/admin/opening-stock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                let message = 'Failed to save opening stock.';
+
+                try {
+                    const error = await response.json();
+                    message = error.error || error.message || message;
+                } catch (ignored) {}
+
+                throw new Error(message);
+            }
+
+            showSuccess('Opening stock saved successfully.');
+            document.getElementById('successActions').style.display = 'flex';
+
+            saveBtn.textContent = '✅ Saved';
+            saveBtn.disabled = true;
+
+        } catch (error) {
+            showError(error.message || 'Failed to save opening stock.');
+            saveBtn.disabled = false;
+            saveBtn.textContent = '✅ Save Opening Stock';
+        }
+    }
+
+    function updateSummary() {
+        let stockroomSkuCount = 0;
+        let stockroomUnits = 0;
+        let wellUnits = 0;
+
+        document.querySelectorAll('#stockroomRows .sku-row').forEach(row => {
+            const idx = row.id.replace('sr_', '');
+            const select = document.getElementById(`sr_sku_${idx}`);
+            const qty = Number(document.getElementById(`sr_qty_${idx}`).value || 0);
+
+            if (select && select.value && qty > 0) {
+                stockroomSkuCount++;
+                stockroomUnits += qty;
+            }
+        });
+
+        document.querySelectorAll('#wellBlocks input[type="number"]').forEach(input => {
+            wellUnits += Number(input.value || 0);
+        });
+
+        document.getElementById('summaryBar').textContent =
+            `Stockroom SKUs: ${stockroomSkuCount} · Stockroom Units: ${stockroomUnits} · Well Units: ${wellUnits}`;
+    }
+
+    function showSuccess(message) {
+        const el = document.getElementById('successMsg');
+        el.textContent = '✅ ' + message;
+        el.style.display = 'block';
+        el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function showError(message) {
+        const el = document.getElementById('errorMsg');
+        el.textContent = '❌ ' + message;
+        el.style.display = 'block';
+        el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function hideMessages() {
+        document.getElementById('successMsg').style.display = 'none';
+        document.getElementById('errorMsg').style.display = 'none';
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+</script>
+
+</body>
+</html>

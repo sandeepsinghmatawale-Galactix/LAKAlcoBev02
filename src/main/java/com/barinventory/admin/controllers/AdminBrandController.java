@@ -25,7 +25,7 @@ import com.barinventory.admin.services.DepotBrandSizeService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/admin/catalog/brands")
+@RequestMapping("/admin/api/catalog/brands") 
 @RequiredArgsConstructor
 public class AdminBrandController {
  private final DepotBrandService brandService;

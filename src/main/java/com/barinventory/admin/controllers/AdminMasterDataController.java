@@ -25,7 +25,7 @@ import com.barinventory.admin.services.DepotSubCategoryService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/admin/catalog/master")
+@RequestMapping("/admin/api/catalog/master")
 @RequiredArgsConstructor
 public class AdminMasterDataController {
  private final DepotCategoryService categoryService;

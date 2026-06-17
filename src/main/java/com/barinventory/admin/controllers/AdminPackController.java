@@ -24,7 +24,7 @@ import com.barinventory.admin.services.DepotPackPriceHistoryService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/admin/catalog/packs")
+@RequestMapping("/admin/api/catalog/packs")
 @RequiredArgsConstructor
 public class AdminPackController {
 	private final DepotBrandSizePackService packService;

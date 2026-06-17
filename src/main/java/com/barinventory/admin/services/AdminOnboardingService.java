@@ -108,8 +108,8 @@ public class AdminOnboardingService {
              StockBatch batch = new StockBatch();
              batch.setBarId(barId);
              batch.setDepotPackId(entry.depotPackId());
-             batch.setQuantityReceived(entry.quantity());
-             batch.setQuantityRemaining(entry.quantity());
+             batch.setQuantityReceived(entry.openingQty());
+             batch.setQuantityRemaining(entry.openingQty());
              batch.setPurchasePricePerUnit(entry.purchasePricePerUnit());
              batch.setInvoiceRefNo(entry.invoiceRefNo());
              batch.setReceivedAt(LocalDateTime.now());
@@ -120,9 +120,9 @@ public class AdminOnboardingService {
              StockroomInventory stockroom = new StockroomInventory();
              stockroom.setBarId(barId);
              stockroom.setDepotBrandSizeId(entry.depotBrandSizeId());
-             stockroom.setOpeningStock(entry.quantity());
+             stockroom.setOpeningStock(entry.openingQty());
              stockroom.setReceivedStock(0);
-             stockroom.setClosingStock(entry.quantity());
+             stockroom.setClosingStock(entry.openingQty());
              stockroom.setSaleStock(0);
              stockroomInventoryRepository.save(stockroom);
          }

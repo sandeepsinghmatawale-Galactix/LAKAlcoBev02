@@ -4,9 +4,14 @@ package com.barinventory.admin.dtos;
  
 
 public record OpeningStockEntry(
- Long depotPackId,
- Long depotBrandSizeId,
- Integer quantity,
- Double purchasePricePerUnit,
- String invoiceRefNo
+        Long depotPackId,
+        Long depotBrandSizeId,
+        Integer openingQty,
+        Double purchasePricePerUnit,
+        Double sellingPrice,
+        String brandName,
+        Integer sizeMl,
+        String packagingType,
+        Double mrp,
+        String invoiceRefNo
 ) {}

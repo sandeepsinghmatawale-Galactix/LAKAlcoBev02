@@ -22,7 +22,7 @@ import com.barinventory.admin.services.DepotBrandSizeService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/admin/catalog/sizes")
+@RequestMapping("/admin/api/catalog/sizes")
 @RequiredArgsConstructor
 public class AdminBrandSizeController {
 	private final DepotBrandSizeService sizeService;

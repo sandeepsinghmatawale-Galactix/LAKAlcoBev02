@@ -1,6 +1,7 @@
 package com.barinventory.inventory.repos;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -18,4 +19,9 @@ public interface StockBatchRepository extends JpaRepository<StockBatch, Long> {
 	Integer getStockOnHand(@Param("barId") Long barId, @Param("packId") Long packId);
 
 	List<StockBatch> findByBarIdAndDepotPackIdOrderByReceivedAtDesc(Long barId, Long depotPackId);
+	
+ 
+	Optional<StockBatch> findByBarIdAndDepotPackId(Long barId, Long depotPackId);
+	
+	
 }

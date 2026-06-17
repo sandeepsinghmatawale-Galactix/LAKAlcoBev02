@@ -79,4 +79,21 @@ public class AdminBarService {
      if (req.endDate() != null) sub.setEndDate(req.endDate());
      subscriptionRepository.save(sub);
  }
+ 
+ public BarSummaryResponse getBarById(Long barId) {
+	    Bar bar = barRepository.findById(barId)
+	        .orElseThrow(() -> new ResourceNotFoundException("Bar not found: " + barId));
+	    Subscription sub = subscriptionRepository.findByBarId(barId).orElse(null);
+	    return new BarSummaryResponse(
+	        bar.getBarId(), bar.getBarName(), bar.getOwnerName(), bar.getPhone(),
+	        bar.getEmail(), bar.getLicenseNumber(), bar.getCity(), bar.getState(),
+	        bar.getStatus().name(),
+	        sub != null ? sub.getStatus().name() : "NONE",
+	        sub != null ? sub.getEndDate() : null
+	    );
+	}
+ 
+ 
+ 
+ 
 }

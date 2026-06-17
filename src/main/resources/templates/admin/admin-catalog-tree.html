@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Brand Catalog</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f4f6f9;
+            color: #333;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 16px 30px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        header p {
+            margin: 2px 0 0;
+            font-size: 12px;
+            color: #999;
+        }
+
+        main {
+            padding: 30px;
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .toolbar {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 18px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .search-input {
+            width: 360px;
+            max-width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #1a73e8;
+        }
+
+        .btn-primary {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .btn-primary:hover {
+            background: #1557b0;
+        }
+
+        .btn-success {
+            background: #34a853;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .btn-success:hover {
+            background: #2d8e47;
+        }
+
+        .btn-warning {
+            background: #fbbc04;
+            color: #333;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .btn-sm {
+            padding: 6px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-outline {
+            background: white;
+            color: #1a73e8;
+            border: 1px solid #1a73e8;
+        }
+
+        .btn-danger {
+            background: #ea4335;
+            color: white;
+        }
+
+        .btn-orange {
+            background: #fbbc04;
+            color: #333;
+        }
+
+        .alert-success {
+            background: #e6f4ea;
+            color: #2d8e47;
+            padding: 14px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #ceead6;
+            font-weight: bold;
+            display: none;
+        }
+
+        .alert-error {
+            background: #fce8e6;
+            color: #c5221f;
+            padding: 14px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6c2;
+            font-weight: bold;
+            display: none;
+        }
+
+        .loader {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            text-align: center;
+            color: #888;
+            font-size: 14px;
+        }
+
+        .catalog-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .brand-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .brand-header {
+            display: grid;
+            grid-template-columns: 40px 2fr 1.5fr 1.4fr 120px 140px 260px;
+            gap: 12px;
+            align-items: center;
+            padding: 16px 18px;
+            cursor: pointer;
+            background: white;
+        }
+
+        .brand-header:hover {
+            background: #fafafa;
+        }
+
+        .expand-icon {
+            font-weight: bold;
+            font-size: 16px;
+            color: #1a73e8;
+        }
+
+        .brand-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .meta {
+            font-size: 13px;
+            color: #777;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .badge-active {
+            background: #e6f4ea;
+            color: #2d8e47;
+        }
+
+        .badge-discontinued {
+            background: #fce8e6;
+            color: #c5221f;
+        }
+
+        .badge-temp {
+            background: #fff4d6;
+            color: #b06000;
+        }
+
+        .badge-new {
+            background: #e8f0fe;
+            color: #1a73e8;
+        }
+
+        .badge-default {
+            background: #eee;
+            color: #555;
+        }
+
+        .visible-pill {
+            font-size: 12px;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .visible-yes {
+            background: #e6f4ea;
+            color: #2d8e47;
+        }
+
+        .visible-no {
+            background: #fce8e6;
+            color: #c5221f;
+        }
+
+        .brand-body {
+            display: none;
+            padding: 0 18px 18px;
+            border-top: 1px solid #f0f0f0;
+            animation: fadeIn 0.2s ease-in;
+        }
+
+        .brand-card.open .brand-body {
+            display: block;
+        }
+
+        .brand-card.open .expand-icon::after {
+            content: "−";
+        }
+
+        .brand-card:not(.open) .expand-icon::after {
+            content: "+";
+        }
+
+        .section-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #1a73e8;
+            font-weight: bold;
+            margin: 16px 0 8px;
+            letter-spacing: 0.5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            background: white;
+        }
+
+        thead {
+            background: #f8f9fa;
+        }
+
+        th {
+            padding: 10px 12px;
+            text-align: left;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #888;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .size-row {
+            cursor: pointer;
+        }
+
+        .size-row:hover td {
+            background: #fafafa;
+        }
+
+        .pack-wrap {
+            display: none;
+            background: #fbfcff;
+        }
+
+        .pack-wrap.open {
+            display: table-row;
+        }
+
+        .pack-table-box {
+            padding: 12px 20px;
+            border-left: 3px solid #1a73e8;
+        }
+
+        .empty-state {
+            padding: 30px;
+            text-align: center;
+            color: #aaa;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        .row-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            width: 560px;
+            max-width: calc(100vw - 30px);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .modal h3 {
+            margin: 0 0 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 9px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #1a73e8;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-3px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 1100px) {
+            .brand-header {
+                grid-template-columns: 30px 1fr;
+            }
+
+            .brand-header > div:not(:first-child):not(:nth-child(2)) {
+                grid-column: 2;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div>
+        <h1>🍾 Brand Catalog</h1>
+        <p>BarInventory Admin · Full Catalog Tree</p>
+    </div>
+
+    <div class="top-actions">
+        <button type="button" class="btn-warning" onclick="window.location='/admin/dashboard'">← Back</button>
+        <button type="button" class="btn-success" onclick="window.location='/admin/catalog/brands/new'">➕ Add Brand</button>
+    </div>
+</header>
+
+<main>
+    <div id="successMsg" class="alert-success"></div>
+    <div id="errorMsg" class="alert-error"></div>
+
+    <div class="toolbar">
+        <input id="searchInput"
+               class="search-input"
+               type="text"
+               placeholder="Search by brand name..."
+               oninput="filterBrands()">
+
+        <button type="button" class="btn-primary" onclick="loadCatalogTree()">🔄 Refresh</button>
+    </div>
+
+    <div id="loader" class="loader">⏳ Loading catalog tree...</div>
+    <div id="catalogList" class="catalog-list"></div>
+    <div id="emptyState" class="empty-state" style="display:none;">No catalog records found.</div>
+</main>
+
+<!-- Price Update Modal -->
+<div id="priceModal" class="modal-overlay">
+    <div class="modal">
+        <h3>💰 Update Pack Price</h3>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>MRP *</label>
+                <input id="price_mrp" type="number" min="0" step="0.01" placeholder="580.00">
+            </div>
+
+            <div class="form-group">
+                <label>Excise Duty</label>
+                <input id="price_exciseDuty" type="number" min="0" step="0.01" placeholder="0.00">
+            </div>
+
+            <div class="form-group">
+                <label>Base Price</label>
+                <input id="price_basePrice" type="number" min="0" step="0.01" placeholder="0.00">
+            </div>
+
+            <div class="form-group">
+                <label>Effective From *</label>
+                <input id="price_effectiveFrom" type="datetime-local">
+            </div>
+
+            <div class="form-group full">
+                <label>Revision Reason</label>
+                <textarea id="price_revisionReason" placeholder="MRP update, new excise revision, price correction, etc."></textarea>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="btn-warning" onclick="closePriceModal()">Cancel</button>
+            <button type="button" class="btn-primary" onclick="submitPriceUpdate()">Save Price</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let catalogData = [];
+    let activePackId = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        setDefaultEffectiveDate();
+        loadCatalogTree();
+    });
+
+    async function loadCatalogTree() {
+        hideMessages();
+
+        const loader = document.getElementById('loader');
+        const list = document.getElementById('catalogList');
+        const empty = document.getElementById('emptyState');
+
+        loader.style.display = 'block';
+        list.innerHTML = '';
+        empty.style.display = 'none';
+
+        try {
+            const res = await fetch('/admin/api/catalog/tree');
+
+            if (!res.ok) {
+                throw new Error('Failed to load catalog tree');
+            }
+
+            catalogData = await res.json();
+
+            renderCatalog(catalogData || []);
+
+        } catch (error) {
+            showError(error.message || 'Failed to load catalog tree');
+        } finally {
+            loader.style.display = 'none';
+        }
+    }
+
+    function renderCatalog(data) {
+        const list = document.getElementById('catalogList');
+        const empty = document.getElementById('emptyState');
+
+        list.innerHTML = '';
+
+        if (!data || data.length === 0) {
+            empty.style.display = 'block';
+            return;
+        }
+
+        empty.style.display = 'none';
+
+        data.forEach(brand => {
+            const card = document.createElement('div');
+            card.className = 'brand-card';
+            card.dataset.brandName = (brand.brandName || '').toLowerCase();
+
+            card.innerHTML = buildBrandCardHtml(brand);
+            list.appendChild(card);
+        });
+    }
+
+    function buildBrandCardHtml(brand) {
+        const brandId = escapeHtml(brand.brandId);
+        const brandName = escapeHtml(brand.brandName || 'Unnamed Brand');
+        const categoryName = escapeHtml(brand.categoryName || '-');
+        const subCategoryName = escapeHtml(brand.subCategoryName || '-');
+        const manufacturerName = escapeHtml(brand.manufacturerName || '-');
+        const distributorName = escapeHtml(brand.distributorName || '-');
+        const status = escapeHtml(brand.status || '-');
+        const visibleToBars = !!brand.visibleToBars;
+        const sizes = brand.sizes || [];
+
+        return `
+            <div class="brand-header" onclick="toggleBrand(this)">
+                <div class="expand-icon"></div>
+
+                <div>
+                    <div class="brand-name">${brandName}</div>
+                    <div class="meta">${categoryName} › ${subCategoryName}</div>
+                </div>
+
+                <div class="meta">🏭 ${manufacturerName}</div>
+                <div class="meta">🚚 ${distributorName}</div>
+
+                <div>${statusBadge(status)}</div>
+
+                <div>
+                    <span class="visible-pill ${visibleToBars ? 'visible-yes' : 'visible-no'}">
+                        ${visibleToBars ? 'Visible' : 'Hidden'}
+                    </span>
+                </div>
+
+                <div class="row-actions" onclick="event.stopPropagation()">
+                    <button type="button" class="btn-sm btn-outline" onclick="editBrand('${brandId}')">Edit</button>
+                    <button type="button" class="btn-sm btn-orange" onclick="toggleBrandStatus('${brandId}')">Toggle</button>
+                    <button type="button" class="btn-sm btn-outline" onclick="window.location='/admin/catalog/sizes/new?brandId=${brandId}'">Add Size</button>
+                </div>
+            </div>
+
+            <div class="brand-body">
+                <div class="section-label">Sizes</div>
+                ${buildSizesTable(sizes)}
+            </div>
+        `;
+    }
+
+    function buildSizesTable(sizes) {
+        if (!sizes || sizes.length === 0) {
+            return `<div class="empty-state">No sizes added for this brand.</div>`;
+        }
+
+        let rows = '';
+
+        sizes.forEach(size => {
+            const brandSizeId = escapeHtml(size.brandSizeId);
+            const sizeMl = escapeHtml(size.sizeMl || '-');
+            const status = escapeHtml(size.status || '-');
+            const visibleToBars = !!size.visibleToBars;
+            const packs = size.packs || [];
+
+            rows += `
+                <tr class="size-row" onclick="toggleSizePacks('${brandSizeId}')">
+                    <td>▶</td>
+                    <td><strong>${sizeMl} ml</strong></td>
+                    <td>${statusBadge(status)}</td>
+                    <td>
+                        <span class="visible-pill ${visibleToBars ? 'visible-yes' : 'visible-no'}">
+                            ${visibleToBars ? 'Visible' : 'Hidden'}
+                        </span>
+                    </td>
+                    <td onclick="event.stopPropagation()">
+                        <div class="row-actions">
+                            <button type="button" class="btn-sm btn-orange" onclick="toggleSizeStatus('${brandSizeId}')">Toggle Status</button>
+                            <button type="button" class="btn-sm btn-outline" onclick="window.location='/admin/catalog/packs/new?sizeId=${brandSizeId}'">Add Pack</button>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr id="packs_${brandSizeId}" class="pack-wrap">
+                    <td colspan="5">
+                        <div class="pack-table-box">
+                            ${buildPacksTable(packs)}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        return `
+            <table>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Size</th>
+                        <th>Status</th>
+                        <th>Visible</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        `;
+    }
+
+    function buildPacksTable(packs) {
+        if (!packs || packs.length === 0) {
+            return `<div class="empty-state">No packs added for this size.</div>`;
+        }
+
+        let rows = '';
+
+        packs.forEach(pack => {
+            const packId = escapeHtml(pack.packId);
+            const packagingType = escapeHtml(pack.packagingType || '-');
+            const unitsPerCase = escapeHtml(pack.unitsPerCase || '-');
+            const currentMrp = pack.currentMrp != null ? Number(pack.currentMrp).toFixed(2) : '-';
+            const status = escapeHtml(pack.status || '-');
+            const visibleToBars = !!pack.visibleToBars;
+
+            rows += `
+                <tr>
+                    <td>${packagingType}</td>
+                    <td>${unitsPerCase}</td>
+                    <td>₹ ${escapeHtml(currentMrp)}</td>
+                    <td>${statusBadge(status)}</td>
+                    <td>
+                        <span class="visible-pill ${visibleToBars ? 'visible-yes' : 'visible-no'}">
+                            ${visibleToBars ? 'Visible' : 'Hidden'}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="row-actions">
+                            <button type="button" class="btn-sm btn-orange" onclick="togglePackStatus('${packId}')">Toggle Status</button>
+                            <button type="button" class="btn-sm btn-outline" onclick="openPriceModal('${packId}', '${escapeHtml(currentMrp)}')">Update Price</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        return `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Packaging</th>
+                        <th>Units / Case</th>
+                        <th>Current MRP</th>
+                        <th>Status</th>
+                        <th>Visible</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        `;
+    }
+
+    function toggleBrand(header) {
+        const card = header.closest('.brand-card');
+        if (card) {
+            card.classList.toggle('open');
+        }
+    }
+
+    function toggleSizePacks(brandSizeId) {
+        const row = document.getElementById(`packs_${brandSizeId}`);
+        if (row) {
+            row.classList.toggle('open');
+        }
+    }
+
+    function filterBrands() {
+        const search = document.getElementById('searchInput').value.toLowerCase().trim();
+        const cards = document.querySelectorAll('.brand-card');
+
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const name = card.dataset.brandName || '';
+            const visible = !search || name.includes(search);
+
+            card.style.display = visible ? 'block' : 'none';
+
+            if (visible) {
+                visibleCount++;
+            }
+        });
+
+        document.getElementById('emptyState').style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+
+    function editBrand(brandId) {
+        showError('Edit Brand modal/page is not implemented yet. Endpoint available: PATCH /admin/api/catalog/brands/' + brandId);
+    }
+
+    async function toggleBrandStatus(brandId) {
+        await patchStatus(`/admin/api/catalog/brands/${brandId}/status`, 'Brand status updated');
+    }
+
+    async function toggleSizeStatus(brandSizeId) {
+        await patchStatus(`/admin/api/catalog/sizes/${brandSizeId}/status`, 'Size status updated');
+    }
+
+    async function togglePackStatus(packId) {
+        await patchStatus(`/admin/api/catalog/packs/${packId}/status`, 'Pack status updated');
+    }
+
+    async function patchStatus(url, successMessage) {
+        hideMessages();
+
+        try {
+            const res = await fetch(url, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (!res.ok) {
+                let message = 'Status update failed';
+
+                try {
+                    const err = await res.json();
+                    message = err.error || err.message || message;
+                } catch (ignored) {}
+
+                throw new Error(message);
+            }
+
+            showSuccess(successMessage);
+            await loadCatalogTree();
+
+        } catch (error) {
+            showError(error.message || 'Status update failed');
+        }
+    }
+
+    function openPriceModal(packId, currentMrp) {
+        activePackId = packId;
+
+        document.getElementById('price_mrp').value = currentMrp !== '-' ? currentMrp : '';
+        document.getElementById('price_exciseDuty').value = '';
+        document.getElementById('price_basePrice').value = '';
+        document.getElementById('price_revisionReason').value = '';
+        setDefaultEffectiveDate();
+
+        document.getElementById('priceModal').classList.add('open');
+    }
+
+    function closePriceModal() {
+        activePackId = null;
+        document.getElementById('priceModal').classList.remove('open');
+    }
+
+    async function submitPriceUpdate() {
+        hideMessages();
+
+        if (!activePackId) {
+            showError('No pack selected.');
+            return;
+        }
+
+        const mrp = document.getElementById('price_mrp').value;
+        const effectiveFrom = document.getElementById('price_effectiveFrom').value;
+
+        if (!mrp) {
+            showError('MRP is required.');
+            return;
+        }
+
+        if (!effectiveFrom) {
+            showError('Effective From is required.');
+            return;
+        }
+
+        const payload = {
+            mrp: parseFloat(mrp),
+            exciseDuty: parseDecimalOrNull(document.getElementById('price_exciseDuty').value),
+            basePrice: parseDecimalOrNull(document.getElementById('price_basePrice').value),
+            effectiveFrom: effectiveFrom,
+            revisionReason: document.getElementById('price_revisionReason').value.trim()
+        };
+
+        try {
+            const res = await fetch(`/admin/api/catalog/packs/${activePackId}/price`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                let message = 'Price update failed';
+
+                try {
+                    const err = await res.json();
+                    message = err.error || err.message || message;
+                } catch (ignored) {}
+
+                throw new Error(message);
+            }
+
+            closePriceModal();
+            showSuccess('Price updated successfully');
+            await loadCatalogTree();
+
+        } catch (error) {
+            showError(error.message || 'Price update failed');
+        }
+    }
+
+    function statusBadge(status) {
+        const normalized = String(status || '').toUpperCase();
+
+        let cls = 'badge-default';
+
+        if (normalized === 'ACTIVE') cls = 'badge-active';
+        else if (normalized === 'DISCONTINUED') cls = 'badge-discontinued';
+        else if (normalized === 'TEMPORARILY_UNAVAILABLE') cls = 'badge-temp';
+        else if (normalized === 'NEW_LAUNCH') cls = 'badge-new';
+
+        return `<span class="badge ${cls}">${escapeHtml(normalized || '-')}</span>`;
+    }
+
+    function setDefaultEffectiveDate() {
+        const input = document.getElementById('price_effectiveFrom');
+        if (!input) return;
+
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+
+        input.value = now.toISOString().slice(0, 16);
+    }
+
+    function parseDecimalOrNull(value) {
+        if (!value) return null;
+
+        const parsed = parseFloat(value);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    function showSuccess(message) {
+        const successMsg = document.getElementById('successMsg');
+        successMsg.textContent = '✅ ' + message;
+        successMsg.style.display = 'block';
+        successMsg.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function showError(message) {
+        const errorMsg = document.getElementById('errorMsg');
+        errorMsg.textContent = '❌ ' + message;
+        errorMsg.style.display = 'block';
+        errorMsg.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function hideMessages() {
+        const successMsg = document.getElementById('successMsg');
+        const errorMsg = document.getElementById('errorMsg');
+
+        successMsg.textContent = '';
+        successMsg.style.display = 'none';
+
+        errorMsg.textContent = '';
+        errorMsg.style.display = 'none';
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+</script>
+
+</body>
+</html>

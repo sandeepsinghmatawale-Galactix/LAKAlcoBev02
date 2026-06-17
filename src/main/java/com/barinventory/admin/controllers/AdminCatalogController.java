@@ -15,7 +15,7 @@ import com.barinventory.admin.services.DepotCatalogService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/admin/catalog")
+@RequestMapping("/admin/api/catalog") 
 @RequiredArgsConstructor
 public class AdminCatalogController {
 	private final DepotCatalogService catalogService;

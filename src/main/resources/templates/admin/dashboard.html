@@ -3,92 +3,572 @@
 <head>
     <meta charset="UTF-8">
     <title>Admin Control Panel</title>
+
     <style>
         * { box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; margin: 0; background: #f4f6f9; color: #333; }
-        header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 16px 30px; border-bottom: 2px solid #ddd; }
-        header h1 { margin: 0; font-size: 20px; }
-        header p { margin: 2px 0 0; font-size: 12px; color: #999; }
-        main { padding: 30px; }
 
-        .stats { display: flex; gap: 20px; margin-bottom: 30px; }
-        .stat-card { flex: 1; background: white; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .stat-card h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; color: #888; }
-        .stat-card p { margin: 0; font-size: 32px; font-weight: bold; color: #1a73e8; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f4f6f9;
+            color: #333;
+        }
 
-        .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #ddd; }
-        .tab-btn { padding: 10px 20px; border: none; background: none; cursor: pointer; font-size: 14px; font-weight: bold; color: #666; border-bottom: 3px solid transparent; margin-bottom: -2px; }
-        .tab-btn.active { color: #1a73e8; border-bottom-color: #1a73e8; }
-        .tab-pane { display: none; }
-        .tab-pane.active { display: block; }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 16px 30px;
+            border-bottom: 2px solid #ddd;
+        }
 
-        .btn-primary { background: #1a73e8; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
-        .btn-primary:hover { background: #1557b0; }
-        .btn-success { background: #34a853; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
-        .btn-success:hover { background: #2d8e47; }
-        .btn-warning { background: #fbbc04; color: #333; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-        .btn-danger { background: #ea4335; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-        .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
+        header h1 {
+            margin: 0;
+            font-size: 20px;
+        }
 
-        .form-panel { background: white; padding: 30px; border-radius: 8px; border: 1px solid #e0e0e0; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 700px; margin-bottom: 30px; display: none; }
-        .form-panel.open { display: block; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .form-group { display: flex; flex-direction: column; gap: 5px; }
-        .form-group.full { grid-column: 1 / -1; }
-        .form-group label { font-size: 13px; font-weight: bold; color: #555; }
-        .form-group input, .form-group select { padding: 9px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: #1a73e8; }
-        .section-title { font-size: 13px; font-weight: bold; color: #1a73e8; text-transform: uppercase; letter-spacing: 0.5px; margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #e8f0fe; grid-column: 1 / -1; }
-        .btn-submit { background: #1a73e8; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 15px; width: 100%; margin-top: 20px; }
-        .btn-submit:hover { background: #1557b0; }
+        header p {
+            margin: 2px 0 0;
+            font-size: 12px;
+            color: #999;
+        }
 
-        .table-wrap { background: white; border-radius: 8px; border: 1px solid #e0e0e0; overflow: hidden; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        thead { background: #f8f9fa; }
-        th { padding: 12px 16px; text-align: left; font-size: 12px; text-transform: uppercase; color: #888; border-bottom: 1px solid #e0e0e0; }
-        td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; }
-        tr:last-child td { border-bottom: none; }
-        tr:hover td { background: #fafafa; }
-        .badge { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
-        .badge-active { background: #e6f4ea; color: #2d8e47; }
-        .badge-inactive { background: #fce8e6; color: #c5221f; }
-        .badge-subscribed { background: #e8f0fe; color: #1a73e8; }
+        main {
+            padding: 30px;
+        }
 
-        .alert-success { background: #e6f4ea; color: #2d8e47; padding: 14px 20px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #ceead6; font-weight: bold; }
-        .alert-error { background: #fce8e6; color: #c5221f; padding: 14px 20px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #f5c6c2; font-weight: bold; display:none; }
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
 
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
-        .modal-overlay.open { display: flex; }
-        .modal { background: white; border-radius: 8px; padding: 30px; width: 500px; max-height: 80vh; overflow-y: auto; }
-        .modal h3 { margin: 0 0 20px; }
-        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+        .stat-card {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
 
-        /* Opening Stock specific */
-        .os-step { background: white; border-radius: 8px; border: 1px solid #e0e0e0; padding: 24px; margin-bottom: 20px; }
-        .os-step-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .os-step-header h3 { margin: 0; font-size: 15px; }
-        .step-badge { background: #e8f0fe; color: #1a73e8; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; }
-        .sku-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 40px; gap: 8px; align-items: center; margin-bottom: 8px; }
-        .sku-row-well { display: grid; grid-template-columns: 2fr 1fr 40px; gap: 8px; align-items: center; margin-bottom: 8px; }
-        .sku-row input, .sku-row select, .sku-row-well input, .sku-row-well select { padding: 7px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; width: 100%; }
-        .sku-row input:focus, .sku-row select:focus, .sku-row-well input:focus { outline: none; border-color: #1a73e8; }
-        .sku-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 40px; gap: 8px; margin-bottom: 6px; }
-        .sku-header-well { display: grid; grid-template-columns: 2fr 1fr 40px; gap: 8px; margin-bottom: 6px; }
-        .sku-header span { font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; }
-        .remove-btn { background: #fce8e6; color: #ea4335; border: none; border-radius: 4px; cursor: pointer; padding: 6px 10px; font-size: 14px; font-weight: bold; }
-        .add-row-btn { background: #f1f8e9; color: #34a853; border: 1px dashed #34a853; border-radius: 4px; padding: 7px 14px; cursor: pointer; font-size: 13px; font-weight: bold; margin-top: 8px; }
-        .add-row-btn:hover { background: #e6f4ea; }
-        .well-block { border: 1px solid #e0e0e0; border-radius: 6px; padding: 16px; margin-bottom: 12px; background: #fafafa; }
-        .well-block-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .well-block-header h4 { margin: 0; font-size: 14px; color: #444; }
-        .catalog-select { width: 100%; padding: 7px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
-        .catalog-select:focus { outline: none; border-color: #1a73e8; }
-        .os-summary { background: #e8f0fe; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; display: none; }
-        .os-summary h4 { margin: 0 0 8px; color: #1a73e8; }
-        .os-summary p { margin: 4px 0; font-size: 13px; }
-        .loader { display: none; text-align: center; padding: 20px; color: #888; font-size: 13px; }
+        .stat-card h3 {
+            margin: 0 0 8px;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #888;
+        }
+
+        .stat-card p {
+            margin: 0;
+            font-size: 32px;
+            font-weight: bold;
+            color: #1a73e8;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab-btn.active {
+            color: #1a73e8;
+            border-bottom-color: #1a73e8;
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .btn-primary {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .btn-primary:hover {
+            background: #1557b0;
+        }
+
+        .btn-success {
+            background: #34a853;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .btn-success:hover {
+            background: #2d8e47;
+        }
+
+        .btn-warning {
+            background: #fbbc04;
+            color: #333;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .btn-danger {
+            background: #ea4335;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .form-panel {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            max-width: 700px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .form-panel.open {
+            display: block;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 9px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #1a73e8;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #1a73e8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 20px 0 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #e8f0fe;
+            grid-column: 1 / -1;
+        }
+
+        .btn-submit {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 15px;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .btn-submit:hover {
+            background: #1557b0;
+        }
+
+        .btn-submit:disabled,
+        .btn-primary:disabled,
+        .btn-success:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .table-wrap {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead {
+            background: #f8f9fa;
+        }
+
+        th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #888;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: #fafafa;
+        }
+
+        .badge {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .badge-active {
+            background: #e6f4ea;
+            color: #2d8e47;
+        }
+
+        .badge-inactive {
+            background: #fce8e6;
+            color: #c5221f;
+        }
+
+        .badge-subscribed {
+            background: #e8f0fe;
+            color: #1a73e8;
+        }
+
+        .alert-success {
+            background: #e6f4ea;
+            color: #2d8e47;
+            padding: 14px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #ceead6;
+            font-weight: bold;
+        }
+
+        .alert-error {
+            background: #fce8e6;
+            color: #c5221f;
+            padding: 14px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6c2;
+            font-weight: bold;
+            display: none;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h3 {
+            margin: 0 0 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        /* Opening stock new UX */
+        .os-card {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            padding: 22px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .os-toolbar {
+            display: grid;
+            grid-template-columns: 1fr 2fr auto;
+            gap: 12px;
+            align-items: end;
+            margin-bottom: 18px;
+        }
+
+        .os-toolbar label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #555;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .os-toolbar select,
+        .os-toolbar input {
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .suggestions {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 100%;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 0 0 6px 6px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+            max-height: 280px;
+            overflow-y: auto;
+            z-index: 50;
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .suggestion-item:hover {
+            background: #f8f9fa;
+        }
+
+        .suggestion-title {
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .suggestion-meta {
+            color: #777;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .os-summary-bar {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            background: #e8f0fe;
+            color: #1a73e8;
+            border-radius: 8px;
+            padding: 14px 18px;
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+
+        .os-inner-tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 2px solid #ddd;
+            margin-bottom: 18px;
+        }
+
+        .os-inner-tab-btn {
+            padding: 9px 18px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .os-inner-tab-btn.active {
+            color: #1a73e8;
+            border-bottom-color: #1a73e8;
+        }
+
+        .os-inner-pane {
+            display: none;
+        }
+
+        .os-inner-pane.active {
+            display: block;
+        }
+
+        .os-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .os-table th {
+            padding: 10px 12px;
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            background: #f8f9fa;
+        }
+
+        .os-table td {
+            padding: 9px 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .os-table input {
+            padding: 7px 9px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            font-size: 13px;
+        }
+
+        .sku-name {
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .sku-meta {
+            font-size: 12px;
+            color: #777;
+            margin-top: 2px;
+        }
+
+        .well-block {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .well-header {
+            background: #fafafa;
+            padding: 12px 16px;
+            font-weight: bold;
+            color: #333;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .max-note {
+            font-size: 11px;
+            color: #777;
+            margin-top: 2px;
+        }
+
+        .empty-state {
+            background: white;
+            padding: 30px;
+            text-align: center;
+            color: #aaa;
+            border: 1px dashed #ddd;
+            border-radius: 8px;
+        }
+
+        .os-status-message {
+            display: none;
+            margin-bottom: 18px;
+        }
+
+        @media (max-width: 900px) {
+            .stats {
+                flex-direction: column;
+            }
+
+            .os-toolbar {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
+
 <body>
 
 <header>
@@ -96,8 +576,12 @@
         <h1>⚙️ Global Management Console</h1>
         <p>BarInventory Admin · v1.0</p>
     </div>
+
     <form th:action="@{/logout}" method="post">
-        <button type="submit" style="background:#ea4335;color:white;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-weight:bold;">Logout</button>
+        <button type="submit"
+                style="background:#ea4335;color:white;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-weight:bold;">
+            Logout
+        </button>
     </form>
 </header>
 
@@ -105,6 +589,7 @@
     <div class="alert-success" th:if="${param.success}">
         ✅ Bar onboarded successfully.
     </div>
+
     <div class="alert-success" th:if="${param.stockSuccess}">
         ✅ Opening stock seeded successfully. Bar is ready for operations.
     </div>
@@ -115,82 +600,102 @@
             <h3>Total Bars</h3>
             <p th:text="${stats != null ? stats.totalBars : 0}">0</p>
         </div>
-        <div class="stat-card">
-            <h3>Active Subscriptions</h3>
-            <p th:text="${stats != null ? stats.activeSubscriptions : 0}">0</p>
-        </div>
+
         <div class="stat-card">
             <h3>Total Brands</h3>
             <p th:text="${stats != null ? stats.totalBrands : 0}">0</p>
         </div>
+
+        <div class="stat-card">
+            <h3>Active Subscriptions</h3>
+            <p th:text="${stats != null ? stats.activeSubscriptions : 0}">0</p>
+        </div>
     </div>
 
-    <!-- Tabs -->
+    <!-- Main Tabs -->
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab(event,'bars')">🏪 Bars</button>
-        <button class="tab-btn" onclick="switchTab(event,'stock')">📦 Opening Stock</button>
-        <button class="tab-btn" onclick="switchTab(event,'brands')">🍾 Brands</button>
+        <button type="button" class="tab-btn active" onclick="switchTab(event,'bars')">🏪 Bars</button>
+        <button type="button" class="tab-btn" onclick="switchTab(event,'stock')">📦 Opening Stock</button>
+        <button type="button" class="tab-btn" onclick="switchTab(event,'brands')">🍾 Brands</button>
     </div>
 
-    <!-- ===================== BARS TAB ===================== -->
+    <!-- Bars Tab -->
     <div id="tab-bars" class="tab-pane active">
         <div style="display:flex;gap:12px;margin-bottom:20px;">
-            <button class="btn-success" onclick="togglePanel('onboardPanel')">➕ Onboard New Bar</button>
+            <button type="button" class="btn-success" onclick="togglePanel('onboardPanel')">
+                ➕ Onboard New Bar
+            </button>
         </div>
 
         <div id="onboardPanel" class="form-panel">
             <h2 style="margin:0 0 20px;">Onboard New Bar</h2>
+
             <form th:action="@{/admin/onboard}" th:object="${onboardRequest}" method="post" autocomplete="off">
                 <input type="text" style="display:none;" aria-hidden="true"/>
                 <input type="password" style="display:none;" aria-hidden="true"/>
+
                 <div class="form-grid">
                     <div class="section-title">🏪 Store Details</div>
+
                     <div class="form-group">
                         <label>Bar / Store Name *</label>
                         <input type="text" th:field="*{storeName}" placeholder="Downtown Lounge" required/>
                     </div>
+
                     <div class="form-group">
                         <label>Owner Name</label>
                         <input type="text" th:field="*{ownerName}" placeholder="Rajesh Kumar"/>
                     </div>
+
                     <div class="form-group">
                         <label>Phone</label>
                         <input type="text" th:field="*{phone}" placeholder="9876543210"/>
                     </div>
+
                     <div class="form-group">
                         <label>Email</label>
                         <input type="email" th:field="*{email}" placeholder="owner@bar.com"/>
                     </div>
+
                     <div class="form-group">
                         <label>License Number</label>
                         <input type="text" th:field="*{licenseNumber}" placeholder="LIC-2024-001"/>
                     </div>
+
                     <div class="form-group">
                         <label>City</label>
                         <input type="text" th:field="*{city}" placeholder="Hyderabad"/>
                     </div>
+
                     <div class="form-group">
                         <label>State</label>
                         <input type="text" th:field="*{state}" placeholder="Telangana"/>
                     </div>
+
                     <div class="form-group">
                         <label>Pincode</label>
                         <input type="text" th:field="*{pincode}" placeholder="500001"/>
                     </div>
+
                     <div class="form-group full">
                         <label>Address</label>
                         <input type="text" th:field="*{address}" placeholder="Plot 12, MG Road"/>
                     </div>
+
                     <div class="section-title">🔐 Login Credentials</div>
+
                     <div class="form-group">
                         <label>Username *</label>
                         <input type="text" th:field="*{adminUsername}" autocomplete="new-password" required/>
                     </div>
+
                     <div class="form-group">
                         <label>Password *</label>
                         <input type="password" th:field="*{adminPassword}" autocomplete="new-password" required/>
                     </div>
+
                     <div class="section-title">📅 Subscription</div>
+
                     <div class="form-group full">
                         <label>Trial Type</label>
                         <select id="trialTypeField" th:field="*{trialType}" onchange="toggleCustomDates()">
@@ -201,142 +706,216 @@
                             <option value="CUSTOM">Custom Dates</option>
                         </select>
                     </div>
+
                     <div id="customDates" style="display:none;grid-column:1/-1;">
                         <div class="form-grid">
                             <div class="form-group">
                                 <label>Start Date</label>
                                 <input type="datetime-local" id="startDateInput" th:field="*{customStartDate}"/>
                             </div>
+
                             <div class="form-group">
                                 <label>End Date</label>
                                 <input type="datetime-local" id="endDateInput" th:field="*{customEndDate}"/>
                             </div>
                         </div>
                     </div>
+
                     <div class="section-title">🍺 Wells Setup</div>
+
                     <div class="form-group full">
                         <label>Well Names (comma separated)</label>
-                        <input type="text" name="wellNamesRaw" id="wellNamesRaw" placeholder="Well 1, Well 2, Bar Counter"/>
-                        <input type="hidden" th:field="*{wellNamesRaw}" id="wellNamesHidden"/>
+                        <input type="text" th:field="*{wellNamesRaw}" placeholder="Well 1, Well 2, Bar Counter"/>
                     </div>
                 </div>
+
                 <button type="submit" class="btn-submit">🚀 Deploy Bar</button>
             </form>
         </div>
 
-        <!-- Bars Table -->
         <div class="table-wrap">
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th><th>Bar Name</th><th>Owner</th><th>City</th>
-                        <th>License</th><th>Status</th><th>Subscription</th><th>Expires</th><th>Actions</th>
+                        <th>ID</th>
+                        <th>Bar Name</th>
+                        <th>Owner</th>
+                        <th>City</th>
+                        <th>License</th>
+                        <th>Status</th>
+                        <th>Subscription</th>
+                        <th>Expires</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
+
                 <tbody>
                     <tr th:each="bar : ${bars}">
-                        <td th:text="${bar.barId}"></td>
-                        <td th:text="${bar.barName}"></td>
-                        <td th:text="${bar.ownerName}"></td>
-                        <td th:text="${bar.city}"></td>
-                        <td th:text="${bar.licenseNumber}"></td>
+                        <td th:text="${bar.barId}">1</td>
+                        <td th:text="${bar.barName}">Bar Name</td>
+                        <td th:text="${bar.ownerName}">Owner</td>
+                        <td th:text="${bar.city}">City</td>
+                        <td th:text="${bar.licenseNumber}">License</td>
+
                         <td>
-                            <span class="badge" th:classappend="${bar.status == 'ACTIVE'} ? 'badge-active' : 'badge-inactive'"
-                                  th:text="${bar.status}"></span>
+                            <span class="badge"
+                                  th:classappend="${bar.status == 'ACTIVE'} ? ' badge-active' : ' badge-inactive'"
+                                  th:text="${bar.status}">ACTIVE</span>
                         </td>
+
                         <td>
-                            <span class="badge badge-subscribed" th:text="${bar.subscriptionStatus}"></span>
+                            <span class="badge badge-subscribed"
+                                  th:text="${bar.subscriptionStatus}">SUBSCRIBED</span>
                         </td>
-                        <td th:text="${bar.subscriptionEnd != null ? #temporals.format(bar.subscriptionEnd,'dd MMM yyyy') : '-'}"></td>
+
+                        <td th:text="${bar.subscriptionEnd != null ? #temporals.format(bar.subscriptionEnd,'dd MMM yyyy') : '-'}">-</td>
+
                         <td style="display:flex;gap:6px;flex-wrap:wrap;">
-                            <button class="btn-warning" th:onclick="|openEditBar(${bar.barId})|">Edit</button>
-                            <button class="btn-primary" style="font-size:12px;padding:6px 12px;" th:onclick="|openEditSub(${bar.barId})|">Subscription</button>
-                            <button class="btn-success" style="font-size:12px;padding:6px 12px;" th:onclick="|goToOpeningStock(${bar.barId}, '${bar.barName}')|">📦 Stock</button>
+                            <button type="button"
+                                    class="btn-warning"
+                                    th:data-bar-id="${bar.barId}"
+                                    onclick="openEditBar(this.dataset.barId)">
+                                Edit
+                            </button>
+
+                            <button type="button"
+                                    class="btn-primary"
+                                    style="font-size:12px;padding:6px 12px;"
+                                    th:data-bar-id="${bar.barId}"
+                                    onclick="openEditSub(this.dataset.barId)">
+                                Subscription
+                            </button>
+
+                            <button type="button"
+                                    class="btn-success"
+                                    style="font-size:12px;padding:6px 12px;"
+                                    th:data-bar-id="${bar.barId}"
+                                    onclick="openOpeningStockForBar(this.dataset.barId)">
+                                📦 Stock
+                            </button>
                         </td>
                     </tr>
+
                     <tr th:if="${#lists.isEmpty(bars)}">
-                        <td colspan="9" style="text-align:center;color:#aaa;padding:30px;">No bars onboarded yet.</td>
+                        <td colspan="9" style="text-align:center;color:#aaa;padding:30px;">
+                            No bars onboarded yet.
+                        </td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- ===================== OPENING STOCK TAB ===================== -->
+    <!-- Opening Stock Tab -->
     <div id="tab-stock" class="tab-pane">
+        <div id="stockSuccessMsg" class="alert-success os-status-message"></div>
+        <div id="stockErrorMsg" class="alert-error os-status-message"></div>
 
-        <!-- Step 1: Select Bar -->
-        <div class="os-step">
-            <div class="os-step-header">
-                <h3>Step 1 — Select Bar</h3>
-                <span class="step-badge">Required</span>
-            </div>
-            <div style="display:flex;gap:12px;align-items:flex-end;">
-                <div style="flex:1;">
-                    <label style="font-size:13px;font-weight:bold;color:#555;display:block;margin-bottom:5px;">Bar</label>
-                    <select id="os_barSelect" class="catalog-select" onchange="onBarSelected()">
-                        <option value="">-- Select a Bar --</option>
+        <div class="os-card">
+            <div class="os-toolbar">
+                <div>
+                    <label>Select Bar *</label>
+                    <select id="osBarSelect" onchange="loadOpeningStockContext()">
+                        <option value="">-- Select Bar --</option>
                         <th:block th:each="bar : ${bars}">
-                            <option th:value="${bar.barId}" th:text="${bar.barName + ' (ID: ' + bar.barId + ')'}"></option>
+                            <option th:value="${bar.barId}"
+                                    th:text="${bar.barName + ' (ID: ' + bar.barId + ')'}">
+                                Bar
+                            </option>
                         </th:block>
                     </select>
                 </div>
-                <button class="btn-primary" onclick="loadBarData()">Load Bar →</button>
-            </div>
-            <div class="loader" id="barLoader">⏳ Loading catalog and wells...</div>
-            <div id="os_barName" style="margin-top:10px;font-size:13px;color:#34a853;font-weight:bold;display:none;"></div>
-        </div>
 
-        <!-- Step 2: Stockroom Opening Stock -->
-        <div class="os-step" id="os_stockroomSection" style="display:none;">
-            <div class="os-step-header">
-                <h3>Step 2 — Stockroom Opening Stock</h3>
-                <span class="step-badge">Stockroom</span>
-            </div>
-            <p style="font-size:13px;color:#888;margin:0 0 16px;">
-                Enter opening quantities for all SKUs in the stockroom. These become available to the bar immediately.
-            </p>
+                <div class="search-box">
+                    <label>Search SKU</label>
+                    <input id="skuSearchInput"
+                           type="text"
+                           placeholder="Type brand name, size, pack..."
+                           oninput="searchSkuSuggestions()"
+                           autocomplete="off">
+                    <div id="skuSuggestions" class="suggestions"></div>
+                </div>
 
-            <div class="sku-header">
-                <span>SKU (Brand · Size · Pack)</span>
-                <span>Opening Qty</span>
-                <span>Purchase Price/Unit (₹)</span>
-                <span>Selling Price (₹)</span>
-                <span>Invoice Ref</span>
-                <span></span>
+                <button type="button" class="btn-primary" onclick="loadOpeningStockContext()">
+                    🔄 Load
+                </button>
             </div>
-            <div id="stockroomRows"></div>
-            <button class="add-row-btn" onclick="addStockroomRow()">+ Add SKU</button>
-        </div>
 
-        <!-- Step 3: Well Opening Stock -->
-        <div class="os-step" id="os_wellsSection" style="display:none;">
-            <div class="os-step-header">
-                <h3>Step 3 — Well Opening Stock</h3>
-                <span class="step-badge">Wells</span>
+            <div class="os-summary-bar">
+                <span id="summarySelectedBar">Bar: Not selected</span>
+                <span id="summarySkuCount">SKUs: 0</span>
+                <span id="summaryStockroomUnits">Stockroom Units: 0</span>
+                <span id="summaryWellUnits">Well Units: 0</span>
             </div>
-            <p style="font-size:13px;color:#888;margin:0 0 16px;">
-                Enter opening quantities per well. Only SKUs added in Step 2 are available here.
-            </p>
-            <div id="wellBlocks"></div>
-        </div>
 
-        <!-- Summary + Submit -->
-        <div id="os_submitSection" style="display:none;">
-            <div class="os-summary" id="os_summary"></div>
-            <div id="os_errorMsg" class="alert-error"></div>
-            <button class="btn-submit" style="max-width:400px;" onclick="submitOpeningStock()">
-                ✅ Save Opening Stock
-            </button>
+            <div class="os-inner-tabs">
+                <button type="button" class="os-inner-tab-btn active" onclick="switchOpeningStockTab(event,'stockroom')">
+                    Stockroom
+                </button>
+                <button type="button" class="os-inner-tab-btn" onclick="switchOpeningStockTab(event,'wells')">
+                    Wells
+                </button>
+            </div>
+
+            <div id="os-inner-stockroom" class="os-inner-pane active">
+                <div class="table-wrap">
+                    <table class="os-table">
+                        <thead>
+                            <tr>
+                                <th>Brand</th>
+                                <th>Size</th>
+                                <th>Pack</th>
+                                <th>Opening Qty</th>
+                                <th>Purchase Price</th>
+                                <th>Selling Price</th>
+                                <th>Invoice Ref</th>
+                                <th>Remove</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stockroomTableBody">
+                            <tr>
+                                <td colspan="8">
+                                    <div class="empty-state">
+                                        Search and add SKUs to begin opening stock entry.
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="os-inner-wells" class="os-inner-pane">
+                <div id="wellsContainer">
+                    <div class="empty-state">
+                        Select a bar and add stockroom SKUs first.
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;">
+                <button type="button" class="btn-warning" onclick="resetOpeningStockForm()">
+                    Reset
+                </button>
+                <button type="button" id="saveOpeningStockBtn" class="btn-success" onclick="saveStock()">
+                    ✅ Save Opening Stock
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- ===================== BRANDS TAB ===================== -->
+    <!-- Brands Tab -->
     <div id="tab-brands" class="tab-pane">
         <div style="display:flex;gap:12px;margin-bottom:20px;">
-            <button class="btn-success" onclick="window.location='/admin/catalog/brands/new'">➕ Add Brand</button>
-            <button class="btn-primary" onclick="window.location='/admin/catalog/tree'">📋 View Catalog</button>
+            <button type="button" class="btn-success" onclick="window.location='/admin/catalog/brands/new'">
+                ➕ Add Brand
+            </button>
+
+            <button type="button" class="btn-primary" onclick="window.location='/admin/catalog/tree'">
+                📋 View Catalog
+            </button>
         </div>
+
         <div style="background:white;padding:40px;border-radius:8px;text-align:center;color:#aaa;border:1px solid #e0e0e0;">
             Brand catalog management → navigate to /admin/catalog/tree
         </div>
@@ -347,6 +926,7 @@
 <div id="editBarModal" class="modal-overlay">
     <div class="modal">
         <h3>✏️ Edit Bar</h3>
+
         <div class="form-grid">
             <div class="form-group"><label>Bar Name</label><input id="eb_barName" type="text"/></div>
             <div class="form-group"><label>Owner Name</label><input id="eb_ownerName" type="text"/></div>
@@ -357,6 +937,7 @@
             <div class="form-group"><label>State</label><input id="eb_state" type="text"/></div>
             <div class="form-group"><label>Pincode</label><input id="eb_pincode" type="text"/></div>
             <div class="form-group full"><label>Address</label><input id="eb_address" type="text"/></div>
+
             <div class="form-group full">
                 <label>Status</label>
                 <select id="eb_status">
@@ -366,9 +947,10 @@
                 </select>
             </div>
         </div>
+
         <div class="modal-actions">
-            <button class="btn-warning" onclick="closeModal('editBarModal')">Cancel</button>
-            <button class="btn-primary" onclick="submitEditBar()">Save</button>
+            <button type="button" class="btn-warning" onclick="closeModal('editBarModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="submitEditBar()">Save</button>
         </div>
     </div>
 </div>
@@ -377,6 +959,7 @@
 <div id="editSubModal" class="modal-overlay">
     <div class="modal">
         <h3>📅 Edit Subscription</h3>
+
         <div class="form-grid">
             <div class="form-group full">
                 <label>Status</label>
@@ -387,6 +970,7 @@
                     <option value="BLOCKED">Blocked</option>
                 </select>
             </div>
+
             <div class="form-group full">
                 <label>Trial Type</label>
                 <select id="sub_trialType">
@@ -397,404 +981,755 @@
                     <option value="CUSTOM">Custom</option>
                 </select>
             </div>
-            <div class="form-group"><label>Start Date</label><input id="sub_startDate" type="datetime-local"/></div>
-            <div class="form-group"><label>End Date</label><input id="sub_endDate" type="datetime-local"/></div>
+
+            <div class="form-group">
+                <label>Start Date</label>
+                <input id="sub_startDate" type="datetime-local"/>
+            </div>
+
+            <div class="form-group">
+                <label>End Date</label>
+                <input id="sub_endDate" type="datetime-local"/>
+            </div>
         </div>
+
         <div class="modal-actions">
-            <button class="btn-warning" onclick="closeModal('editSubModal')">Cancel</button>
-            <button class="btn-primary" onclick="submitEditSub()">Save</button>
+            <button type="button" class="btn-warning" onclick="closeModal('editSubModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="submitEditSub()">Save</button>
         </div>
     </div>
 </div>
 
 <script>
     let activeBarId = null;
-    let catalogItems = [];   // from GET /inventory/catalog
-    let barWells = [];        // from GET /admin/opening-stock/bars/{id}/wells
-    let selectedBarId = null;
 
-    // ── Tab switching ──────────────────────────────────────────
+    let allCatalogSkus = [];
+    let barWells = [];
+    let stockroomRows = [];
+
     function switchTab(event, name) {
         document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('tab-' + name).classList.add('active');
-        event.target.classList.add('active');
+
+        const pane = document.getElementById('tab-' + name);
+        if (pane) pane.classList.add('active');
+
+        if (event && event.target) event.target.classList.add('active');
     }
 
     function togglePanel(id) {
-        const p = document.getElementById(id);
-        p.classList.toggle('open');
-        if (p.classList.contains('open')) p.scrollIntoView({ behavior: 'smooth' });
+        const panel = document.getElementById(id);
+        if (!panel) return;
+
+        panel.classList.toggle('open');
+
+        if (panel.classList.contains('open')) {
+            panel.scrollIntoView({ behavior: 'smooth' });
+        }
     }
 
     function toggleCustomDates() {
-        const v = document.getElementById('trialTypeField').value;
-        document.getElementById('customDates').style.display = v === 'CUSTOM' ? 'block' : 'none';
+        const field = document.getElementById('trialTypeField');
+        const customDates = document.getElementById('customDates');
+
+        if (!field || !customDates) return;
+
+        customDates.style.display = field.value === 'CUSTOM' ? 'block' : 'none';
     }
 
-    // ── Opening Stock: navigate from Bars tab ─────────────────
-    function goToOpeningStock(barId, barName) {
-        // Switch to stock tab
+    function switchOpeningStockTab(event, name) {
+        document.querySelectorAll('.os-inner-pane').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.os-inner-tab-btn').forEach(b => b.classList.remove('active'));
+
+        document.getElementById('os-inner-' + name).classList.add('active');
+
+        if (event && event.target) {
+            event.target.classList.add('active');
+        }
+    }
+
+    function openOpeningStockForBar(barId) {
         document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
         document.getElementById('tab-stock').classList.add('active');
-        document.querySelectorAll('.tab-btn')[1].classList.add('active');
 
-        // Pre-select bar
-        document.getElementById('os_barSelect').value = barId;
-        loadBarData();
+        const mainTabButtons = document.querySelectorAll('.tab-btn');
+        if (mainTabButtons.length > 1) {
+            mainTabButtons[1].classList.add('active');
+        }
+
+        document.getElementById('osBarSelect').value = barId;
+        loadOpeningStockContext();
     }
 
-    function onBarSelected() {
-        // Reset downstream sections when bar changes
-        document.getElementById('os_stockroomSection').style.display = 'none';
-        document.getElementById('os_wellsSection').style.display = 'none';
-        document.getElementById('os_submitSection').style.display = 'none';
-        document.getElementById('os_barName').style.display = 'none';
-        document.getElementById('stockroomRows').innerHTML = '';
-        document.getElementById('wellBlocks').innerHTML = '';
-        catalogItems = [];
-        barWells = [];
-    }
+    async function loadOpeningStockContext() {
+        hideStockMessages();
 
-    async function loadBarData() {
-        const barId = document.getElementById('os_barSelect').value;
-        if (!barId) { alert('Please select a bar first.'); return; }
+        const barId = getSelectedOpeningStockBarId();
 
-        selectedBarId = barId;
-        document.getElementById('barLoader').style.display = 'block';
-        document.getElementById('os_stockroomSection').style.display = 'none';
-        document.getElementById('os_wellsSection').style.display = 'none';
-        document.getElementById('os_submitSection').style.display = 'none';
+        if (!barId) {
+            showStockError('Please select a bar first.');
+            return;
+        }
 
         try {
-            // Load catalog + wells in parallel
             const [catalogRes, wellsRes] = await Promise.all([
                 fetch('/inventory/catalog'),
                 fetch(`/admin/opening-stock/bars/${barId}/wells`)
             ]);
 
-            if (!catalogRes.ok) throw new Error('Failed to load catalog');
-            if (!wellsRes.ok) throw new Error('Failed to load wells for this bar');
+            if (!catalogRes.ok) throw new Error('Failed to load catalog.');
+            if (!wellsRes.ok) throw new Error('Failed to load wells for selected bar.');
 
-            catalogItems = await catalogRes.json();
+            allCatalogSkus = await catalogRes.json();
+
             const wellsData = await wellsRes.json();
             barWells = wellsData.wells || [];
 
-            document.getElementById('barLoader').style.display = 'none';
-            const nameEl = document.getElementById('os_barName');
-            nameEl.textContent = `✅ Loaded: ${wellsData.barName} — ${barWells.length} well(s) found, ${catalogItems.length} SKUs in catalog`;
-            nameEl.style.display = 'block';
+            stockroomRows = [];
+            document.getElementById('skuSearchInput').value = '';
+            document.getElementById('skuSuggestions').style.display = 'none';
 
-            // Render sections
-            renderStockroomSection();
-            renderWellsSection();
+            renderStockroomTable();
+            renderWellsTables();
+            updateOpeningStockSummary();
 
-            document.getElementById('os_stockroomSection').style.display = 'block';
-            document.getElementById('os_wellsSection').style.display = barWells.length > 0 ? 'block' : 'none';
-            document.getElementById('os_submitSection').style.display = 'block';
+            showStockSuccess(`Loaded ${allCatalogSkus.length} SKU(s) and ${barWells.length} well(s) for ${wellsData.barName || 'selected bar'}.`);
 
-        } catch (e) {
-            document.getElementById('barLoader').style.display = 'none';
-            showError(e.message);
+        } catch (error) {
+            showStockError(error.message || 'Unable to load opening stock data.');
         }
     }
 
-    // ── Stockroom rows ────────────────────────────────────────
-    function catalogOptionsHtml(selectedPackId = '') {
-        return catalogItems.map(c =>
-            `<option value="${c.packId}" 
-                data-brand="${c.brandName}" 
-                data-size="${c.sizeMl}" 
-                data-pack="${c.packagingType}"
-                data-sizeid="${c.brandSizeId}"
-                data-brandid="${c.brandId}"
-                data-mrp="${c.mrp ?? ''}"
-                ${String(c.packId) === String(selectedPackId) ? 'selected' : ''}>
-                ${c.brandName} · ${c.sizeMl}ml · ${c.packagingType}
-            </option>`
-        ).join('');
+    function getSelectedOpeningStockBarId() {
+        return document.getElementById('osBarSelect').value;
     }
 
-    function renderStockroomSection() {
-        document.getElementById('stockroomRows').innerHTML = '';
-        addStockroomRow(); // start with one empty row
-    }
+    function searchSkuSuggestions() {
+        const input = document.getElementById('skuSearchInput');
+        const suggestions = document.getElementById('skuSuggestions');
+        const keyword = input.value.trim().toLowerCase();
 
-    function addStockroomRow() {
-        const container = document.getElementById('stockroomRows');
-        const idx = container.children.length;
-        const div = document.createElement('div');
-        div.className = 'sku-row';
-        div.id = `sr_row_${idx}`;
-        div.innerHTML = `
-            <select class="catalog-select" id="sr_sku_${idx}" onchange="onStockroomSkuChange(${idx})">
-                <option value="">-- Select SKU --</option>
-                ${catalogOptionsHtml()}
-            </select>
-            <input type="number" id="sr_qty_${idx}" placeholder="Qty" min="0" value="0"/>
-            <input type="number" id="sr_cost_${idx}" placeholder="₹ Cost" min="0" step="0.01"/>
-            <input type="number" id="sr_sell_${idx}" placeholder="₹ Sell (opt)" min="0" step="0.01"/>
-            <input type="text"   id="sr_ref_${idx}"  placeholder="Inv Ref (opt)"/>
-            <button class="remove-btn" onclick="removeRow('sr_row_${idx}')">✕</button>
-        `;
-        container.appendChild(div);
-    }
+        suggestions.innerHTML = '';
 
-    function onStockroomSkuChange(idx) {
-        const sel = document.getElementById(`sr_sku_${idx}`);
-        const opt = sel.options[sel.selectedIndex];
-        const mrp = opt.getAttribute('data-mrp');
-        if (mrp) {
-            document.getElementById(`sr_sell_${idx}`).placeholder = `₹ ${mrp} (MRP)`;
-        }
-        // Refresh well dropdowns since stockroom SKUs define what's available in wells
-        refreshWellSkuOptions();
-    }
-
-    function removeRow(id) {
-        const el = document.getElementById(id);
-        if (el) { el.remove(); refreshWellSkuOptions(); }
-    }
-
-    // ── Well blocks ───────────────────────────────────────────
-    function renderWellsSection() {
-        const container = document.getElementById('wellBlocks');
-        container.innerHTML = '';
-        barWells.forEach(well => {
-            const block = document.createElement('div');
-            block.className = 'well-block';
-            block.id = `well_block_${well.wellId}`;
-            block.innerHTML = `
-                <div class="well-block-header">
-                    <h4>🍺 ${well.wellName}</h4>
-                    <button class="add-row-btn" onclick="addWellRow(${well.wellId})">+ Add SKU</button>
-                </div>
-                <div class="sku-header-well">
-                    <span>SKU (from Stockroom)</span><span>Opening Qty</span><span></span>
-                </div>
-                <div id="well_rows_${well.wellId}"></div>
-            `;
-            container.appendChild(block);
-            addWellRow(well.wellId); // start with one empty row per well
-        });
-    }
-
-    function getSelectedStockroomSkus() {
-        // Returns array of selected packIds from stockroom rows
-        const rows = document.getElementById('stockroomRows').children;
-        const skus = [];
-        for (const row of rows) {
-            const sel = row.querySelector('select');
-            if (sel && sel.value) skus.push(sel);
-        }
-        return skus;
-    }
-
-    function stockroomSkuOptionsHtml(selectedPackId = '') {
-        // Only show SKUs that have been selected in stockroom step
-        const selects = getSelectedStockroomSkus();
-        if (selects.length === 0) {
-            return '<option value="">-- Add SKUs to Stockroom first --</option>';
-        }
-        let opts = '<option value="">-- Select SKU --</option>';
-        selects.forEach(sel => {
-            const opt = sel.options[sel.selectedIndex];
-            if (!opt.value) return;
-            opts += `<option value="${opt.value}"
-                data-sizeid="${opt.getAttribute('data-sizeid')}"
-                ${String(opt.value) === String(selectedPackId) ? 'selected' : ''}>
-                ${opt.text}
-            </option>`;
-        });
-        return opts;
-    }
-
-    function addWellRow(wellId) {
-        const container = document.getElementById(`well_rows_${wellId}`);
-        const idx = container.children.length;
-        const div = document.createElement('div');
-        div.className = 'sku-row-well';
-        div.id = `wr_${wellId}_${idx}`;
-        div.innerHTML = `
-            <select class="catalog-select" id="wr_sku_${wellId}_${idx}">
-                <option value="">-- Select SKU --</option>
-                ${stockroomSkuOptionsHtml()}
-            </select>
-            <input type="number" id="wr_qty_${wellId}_${idx}" placeholder="Opening Qty" min="0" value="0"/>
-            <button class="remove-btn" onclick="removeRow('wr_${wellId}_${idx}')">✕</button>
-        `;
-        container.appendChild(div);
-    }
-
-    function refreshWellSkuOptions() {
-        // Re-render all well SKU dropdowns when stockroom changes
-        barWells.forEach(well => {
-            const container = document.getElementById(`well_rows_${well.wellId}`);
-            if (!container) return;
-            for (const row of container.children) {
-                const sel = row.querySelector('select');
-                if (!sel) continue;
-                const currentVal = sel.value;
-                sel.innerHTML = stockroomSkuOptionsHtml(currentVal);
-            }
-        });
-    }
-
-    // ── Submit ────────────────────────────────────────────────
-    function buildPayload() {
-        const stockroomLines = [];
-        const wellLines = [];
-
-        // Stockroom
-        const srRows = document.getElementById('stockroomRows').children;
-        for (const row of srRows) {
-            const sel = row.querySelector('select');
-            if (!sel || !sel.value) continue;
-            const opt = sel.options[sel.selectedIndex];
-            const idx = sel.id.replace('sr_sku_', '');
-            const qty = parseInt(document.getElementById(`sr_qty_${idx}`).value) || 0;
-            const cost = parseFloat(document.getElementById(`sr_cost_${idx}`).value) || 0;
-            const sell = parseFloat(document.getElementById(`sr_sell_${idx}`).value) || null;
-            const ref  = document.getElementById(`sr_ref_${idx}`).value || null;
-            if (qty <= 0) continue;
-            stockroomLines.push({
-                depotPackId: parseInt(sel.value),
-                depotBrandSizeId: parseInt(opt.getAttribute('data-sizeid')),
-                openingQty: qty,
-                purchasePricePerUnit: cost,
-                sellingPrice: sell,
-                invoiceRefNo: ref,
-                brandName: opt.getAttribute('data-brand'),
-                sizeMl: parseInt(opt.getAttribute('data-size')),
-                packagingType: opt.getAttribute('data-pack'),
-                mrp: parseFloat(opt.getAttribute('data-mrp')) || null
-            });
-        }
-
-        // Wells
-        barWells.forEach(well => {
-            const container = document.getElementById(`well_rows_${well.wellId}`);
-            if (!container) return;
-            for (const row of container.children) {
-                const sel = row.querySelector('select');
-                if (!sel || !sel.value) continue;
-                const opt = sel.options[sel.selectedIndex];
-                const qtyInput = row.querySelector('input[type="number"]');
-                const qty = parseInt(qtyInput?.value) || 0;
-                if (qty <= 0) continue;
-                wellLines.push({
-                    wellId: well.wellId,
-                    depotPackId: parseInt(sel.value),
-                    depotBrandSizeId: parseInt(opt.getAttribute('data-sizeid')),
-                    openingQty: qty
-                });
-            }
-        });
-
-        return { barId: parseInt(selectedBarId), stockroomLines, wellLines };
-    }
-
-    async function submitOpeningStock() {
-        const payload = buildPayload();
-
-        if (!payload.stockroomLines.length) {
-            showError('Please add at least one SKU to the stockroom with qty > 0.');
+        if (!keyword) {
+            suggestions.style.display = 'none';
             return;
         }
 
-        hideError();
-        const btn = document.querySelector('#os_submitSection .btn-submit');
-        btn.textContent = '⏳ Saving...';
+        const matches = allCatalogSkus
+            .filter(sku => {
+                const text = `${sku.brandName || ''} ${sku.sizeMl || ''} ${sku.packagingType || ''}`.toLowerCase();
+                return text.includes(keyword);
+            })
+            .slice(0, 20);
+
+        if (matches.length === 0) {
+            suggestions.innerHTML = '<div class="suggestion-item"><div class="suggestion-title">No SKU found</div></div>';
+            suggestions.style.display = 'block';
+            return;
+        }
+
+        matches.forEach(sku => {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+
+            item.innerHTML = `
+                <div class="suggestion-title">
+                    ${escapeHtml(sku.brandName)} · ${escapeHtml(sku.sizeMl)}ml · ${escapeHtml(sku.packagingType)}
+                </div>
+                <div class="suggestion-meta">
+                    MRP: ₹${escapeHtml(sku.mrp ?? '-')} · Pack ID: ${escapeHtml(sku.packId)}
+                </div>
+            `;
+
+            item.onclick = function () {
+                addSkuToStockroom(sku);
+                input.value = '';
+                suggestions.style.display = 'none';
+            };
+
+            suggestions.appendChild(item);
+        });
+
+        suggestions.style.display = 'block';
+    }
+
+    function addSkuToStockroom(sku) {
+        const existing = stockroomRows.find(row => String(row.depotPackId) === String(sku.packId));
+
+        if (existing) {
+            existing.openingQty += 1;
+        } else {
+            stockroomRows.push({
+                depotPackId: Number(sku.packId),
+                depotBrandSizeId: Number(sku.brandSizeId),
+                brandName: sku.brandName || '',
+                sizeMl: Number(sku.sizeMl || 0),
+                packagingType: sku.packagingType || '',
+                mrp: sku.currentMrp != null ? Number(sku.currentMrp) : null,
+                openingQty: 1,
+                purchasePricePerUnit: 0,
+               sellingPrice: sku.currentMrp != null ? Number(sku.currentMrp) : 0,
+                invoiceRefNo: ''
+            });
+        }
+
+        renderStockroomTable();
+        renderWellsTables();
+        updateOpeningStockSummary();
+    }
+
+    function renderStockroomTable() {
+        const tbody = document.getElementById('stockroomTableBody');
+        tbody.innerHTML = '';
+
+        if (stockroomRows.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8">
+                        <div class="empty-state">Search and add SKUs to begin opening stock entry.</div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        stockroomRows.forEach((row, index) => {
+            const tr = document.createElement('tr');
+
+            tr.innerHTML = `
+                <td>
+                    <div class="sku-name">${escapeHtml(row.brandName)}</div>
+                    <div class="sku-meta">Pack ID: ${escapeHtml(row.depotPackId)} · MRP: ₹${escapeHtml(row.mrp ?? '-')}</div>
+                </td>
+                <td>${escapeHtml(row.sizeMl)} ml</td>
+                <td>${escapeHtml(row.packagingType)}</td>
+                <td>
+                    <input type="number" min="0" value="${escapeHtml(row.openingQty)}"
+                           oninput="updateStockroomField(${index}, 'openingQty', this.value)">
+                </td>
+                <td>
+                    <input type="number" min="0" step="0.01" value="${escapeHtml(row.purchasePricePerUnit)}"
+                           oninput="updateStockroomField(${index}, 'purchasePricePerUnit', this.value)">
+                </td>
+                <td>
+                    <input type="number" min="0" step="0.01" value="${escapeHtml(row.sellingPrice)}"
+                           oninput="updateStockroomField(${index}, 'sellingPrice', this.value)">
+                </td>
+                <td>
+                    <input type="text" value="${escapeHtml(row.invoiceRefNo)}"
+                           placeholder="INV-001"
+                           oninput="updateStockroomField(${index}, 'invoiceRefNo', this.value)">
+                </td>
+                <td>
+                    <button type="button" class="btn-danger" onclick="removeStockroomSku(${index})">×</button>
+                </td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+    }
+
+    function updateStockroomField(index, field, value) {
+        if (!stockroomRows[index]) return;
+
+        if (field === 'openingQty') {
+            stockroomRows[index][field] = Number(value || 0);
+            trimWellQtyIfNeeded(stockroomRows[index].depotPackId);
+        } else if (field === 'purchasePricePerUnit' || field === 'sellingPrice') {
+            stockroomRows[index][field] = Number(value || 0);
+        } else {
+            stockroomRows[index][field] = value || '';
+        }
+
+        renderWellsTables();
+        updateOpeningStockSummary();
+    }
+
+    function removeStockroomSku(index) {
+        const removed = stockroomRows[index];
+
+        stockroomRows.splice(index, 1);
+
+        if (removed) {
+            barWells.forEach(well => {
+                if (!well.lines) return;
+                well.lines = well.lines.filter(line => String(line.depotPackId) !== String(removed.depotPackId));
+            });
+        }
+
+        renderStockroomTable();
+        renderWellsTables();
+        updateOpeningStockSummary();
+    }
+	function renderWellsTables() {
+	    const container = document.getElementById('wellsContainer');
+	    container.innerHTML = '';
+
+	    if (!getSelectedOpeningStockBarId()) {
+	        container.innerHTML = '<div class="empty-state">Select a bar first.</div>';
+	        return;
+	    }
+
+	    if (stockroomRows.length === 0) {
+	        container.innerHTML = '<div class="empty-state">Add stockroom SKUs first. Wells can only use stockroom SKUs.</div>';
+	        return;
+	    }
+
+	    if (barWells.length === 0) {
+	        container.innerHTML = '<div class="empty-state">No wells found for this bar.</div>';
+	        return;
+	    }
+
+	    barWells.forEach(well => {
+	        if (!well.lines) {
+	            well.lines = [];
+	        }
+
+	        well.lines = well.lines.filter(line =>
+	            stockroomRows.some(sku => String(sku.depotPackId) === String(line.depotPackId))
+	        );
+
+	        const block = document.createElement('div');
+	        block.className = 'well-block';
+
+	        let rowsHtml = '';
+
+	        well.lines.forEach((line, lineIndex) => {
+	            const sku = stockroomRows.find(row => String(row.depotPackId) === String(line.depotPackId));
+	            if (!sku) return;
+
+	            rowsHtml += `
+	                <tr id="well_tr_${well.wellId}_${lineIndex}">
+	                    <td>
+	                        <div class="sku-name">${escapeHtml(sku.brandName)}</div>
+	                        <div class="sku-meta">MRP: ₹${escapeHtml(sku.mrp ?? '-')}</div>
+	                    </td>
+	                    <td>${escapeHtml(sku.sizeMl)}ml</td>
+	                    <td>${escapeHtml(sku.packagingType)}</td>
+	                    <td>${escapeHtml(sku.openingQty)}</td>
+	                    <td>
+	                        <input type="number"
+	                               min="0"
+	                               max="${escapeHtml(sku.openingQty)}"
+	                               value="${escapeHtml(line.openingQty)}"
+	                               oninput="updateWellQty(${well.wellId}, ${lineIndex}, this.value)">
+	                        <div class="max-note">Max: ${escapeHtml(sku.openingQty)}</div>
+	                    </td>
+	                    <td>
+	                        <button type="button"
+	                                class="btn-danger"
+	                                onclick="removeWellSku(${well.wellId}, ${lineIndex}, '${sku.depotPackId}')">
+	                            ×
+	                        </button>
+	                    </td>
+	                </tr>
+	            `;
+	        });
+
+	        block.innerHTML = `
+	            <div class="well-header">🍺 ${escapeHtml(well.wellName || 'Well')}</div>
+
+	            <div class="os-toolbar" style="grid-template-columns:1fr;margin-bottom:10px;">
+	                <div>
+	                    <label>Search Stockroom SKU</label>
+	                    <input type="text"
+	                           id="well_search_${well.wellId}"
+	                           placeholder="Search stockroom SKU to add..."
+	                           oninput="filterWellSearch(${well.wellId})"
+	                           autocomplete="off">
+	                </div>
+	            </div>
+
+	            <div id="well_search_results_${well.wellId}"
+	                 style="border:1px solid #e0e0e0;border-radius:4px;max-height:160px;overflow-y:auto;display:none;margin-bottom:10px;background:white;font-size:13px;">
+	            </div>
+
+	            <div class="table-wrap">
+	                <table class="os-table">
+	                    <thead>
+	                        <tr>
+	                            <th>Brand</th>
+	                            <th>Size</th>
+	                            <th>Pack</th>
+	                            <th>Stockroom Qty</th>
+	                            <th>Well Opening Qty</th>
+	                            <th>Remove</th>
+	                        </tr>
+	                    </thead>
+	                    <tbody id="well_tbody_${well.wellId}">
+	                        ${rowsHtml || '<tr><td colspan="6"><div class="empty-state">Search and add SKU for this well.</div></td></tr>'}
+	                    </tbody>
+	                </table>
+	            </div>
+	        `;
+
+	        container.appendChild(block);
+	    });
+	}	function filterWellSearch(wellId) {
+	    const input = document.getElementById(`well_search_${wellId}`);
+	    const resultsEl = document.getElementById(`well_search_results_${wellId}`);
+
+	    const q = input.value.toLowerCase().trim();
+
+	    if (!q) {
+	        resultsEl.style.display = 'none';
+	        return;
+	    }
+
+	    const well = barWells.find(w => String(w.wellId) === String(wellId));
+
+	    const matches = stockroomRows.filter(sku => {
+	        const alreadyAdded = well?.lines?.some(l => String(l.depotPackId) === String(sku.depotPackId));
+	        const text = `${sku.brandName} ${sku.sizeMl} ${sku.packagingType}`.toLowerCase();
+
+	        return !alreadyAdded && text.includes(q);
+	    });
+
+	    if (!matches.length) {
+	        resultsEl.innerHTML = '<div style="padding:10px;color:#888;">No matching stockroom SKU</div>';
+	        resultsEl.style.display = 'block';
+	        return;
+	    }
+
+	    resultsEl.innerHTML = matches.map(sku => `
+	        <div onclick="addWellSku(${wellId}, '${sku.depotPackId}')"
+	             style="padding:8px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center;">
+	            <span>
+	                <b>${escapeHtml(sku.brandName)}</b>
+	                <span style="margin-left:6px;font-size:11px;background:#e8f0fe;color:#1a73e8;padding:2px 6px;border-radius:4px;">
+	                    ${escapeHtml(sku.sizeMl)}ml
+	                </span>
+	                <span style="margin-left:4px;font-size:11px;background:#f1f3f4;padding:2px 6px;border-radius:4px;">
+	                    ${escapeHtml(sku.packagingType)}
+	                </span>
+	            </span>
+	            <span style="font-size:12px;color:#888;">
+	                Stock: ${escapeHtml(sku.openingQty)}
+	                <span style="color:#1a73e8;margin-left:8px;">+ Add</span>
+	            </span>
+	        </div>
+	    `).join('');
+
+	    resultsEl.style.display = 'block';
+	}
+
+	function addWellSku(wellId, packId) {
+	    const well = barWells.find(w => String(w.wellId) === String(wellId));
+	    if (!well) return;
+
+	    if (!well.lines) {
+	        well.lines = [];
+	    }
+
+	    if (well.lines.some(l => String(l.depotPackId) === String(packId))) {
+	        alert('SKU already added to this well.');
+	        return;
+	    }
+
+	    const sku = stockroomRows.find(s => String(s.depotPackId) === String(packId));
+	    if (!sku) return;
+
+	    well.lines.push({
+	        wellId: Number(wellId),
+	        depotPackId: Number(sku.depotPackId),
+	        depotBrandSizeId: Number(sku.depotBrandSizeId),
+	        openingQty: 0
+	    });
+
+	    renderWellsTables();
+	    updateOpeningStockSummary();
+	}
+
+	function removeWellSku(wellId, lineIndex, packId) {
+	    const well = barWells.find(w => String(w.wellId) === String(wellId));
+
+	    if (well && well.lines) {
+	        well.lines = well.lines.filter(l => String(l.depotPackId) !== String(packId));
+	    }
+
+	    renderWellsTables();
+	    updateOpeningStockSummary();
+	}
+
+    function updateWellQty(wellId, lineIndex, value) {
+        const well = barWells.find(w => Number(w.wellId) === Number(wellId));
+        if (!well || !well.lines || !well.lines[lineIndex]) return;
+
+        const line = well.lines[lineIndex];
+        const stockroomSku = stockroomRows.find(sku => String(sku.depotPackId) === String(line.depotPackId));
+
+        let qty = Number(value || 0);
+        const max = stockroomSku ? Number(stockroomSku.openingQty || 0) : 0;
+
+        if (qty > max) qty = max;
+        if (qty < 0) qty = 0;
+
+        line.openingQty = qty;
+        renderWellsTables();
+        updateOpeningStockSummary();
+    }
+
+    function trimWellQtyIfNeeded(depotPackId) {
+        const stockroomSku = stockroomRows.find(sku => String(sku.depotPackId) === String(depotPackId));
+        const max = stockroomSku ? Number(stockroomSku.openingQty || 0) : 0;
+
+        barWells.forEach(well => {
+            if (!well.lines) return;
+
+            well.lines.forEach(line => {
+                if (String(line.depotPackId) === String(depotPackId) && Number(line.openingQty || 0) > max) {
+                    line.openingQty = max;
+                }
+            });
+        });
+    }
+
+    function buildOpeningStockPayload() {
+        const barId = getSelectedOpeningStockBarId();
+
+        const stockroomLines = stockroomRows
+            .filter(row => Number(row.openingQty || 0) > 0)
+            .map(row => ({
+                depotPackId: Number(row.depotPackId),
+                depotBrandSizeId: Number(row.depotBrandSizeId),
+                openingQty: Number(row.openingQty || 0),
+                purchasePricePerUnit: Number(row.purchasePricePerUnit || 0),
+                sellingPrice: Number(row.sellingPrice || 0),
+                brandName: row.brandName,
+                sizeMl: Number(row.sizeMl),
+                packagingType: row.packagingType,
+                mrp: row.mrp != null ? Number(row.mrp) : null,
+                invoiceRefNo: row.invoiceRefNo || null
+            }));
+
+        const wellLines = [];
+
+        barWells.forEach(well => {
+            if (!well.lines) return;
+
+            well.lines.forEach(line => {
+                if (Number(line.openingQty || 0) > 0) {
+                    wellLines.push({
+                        wellId: Number(well.wellId),
+                        depotPackId: Number(line.depotPackId),
+                        depotBrandSizeId: Number(line.depotBrandSizeId),
+                        openingQty: Number(line.openingQty)
+                    });
+                }
+            });
+        });
+
+        return {
+            barId: Number(barId),
+            stockroomLines,
+            wellLines
+        };
+    }
+
+    async function saveStock() {
+        hideStockMessages();
+
+        const payload = buildOpeningStockPayload();
+
+        if (!payload.barId) {
+            showStockError('Please select a bar.');
+            return;
+        }
+
+        if (!payload.stockroomLines.length) {
+            showStockError('Please add at least one stockroom SKU with opening quantity greater than zero.');
+            return;
+        }
+
+        const btn = document.getElementById('saveOpeningStockBtn');
         btn.disabled = true;
+        btn.textContent = '⏳ Saving...';
 
         try {
             const res = await fetch('/admin/opening-stock', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
 
             if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || 'Failed to save opening stock');
+                let message = 'Failed to save opening stock.';
+
+                try {
+                    const err = await res.json();
+                    message = err.error || err.message || message;
+                } catch (ignored) {}
+
+                throw new Error(message);
             }
 
-            const result = await res.json();
-            showSummary(result);
-            btn.textContent = '✅ Saved Successfully';
+            showStockSuccess('Opening stock saved successfully.');
+            btn.textContent = '✅ Saved';
 
-        } catch (e) {
-            showError(e.message);
-            btn.textContent = '✅ Save Opening Stock';
+        } catch (error) {
+            showStockError(error.message || 'Failed to save opening stock.');
             btn.disabled = false;
+            btn.textContent = '✅ Save Opening Stock';
         }
     }
 
-    function showSummary(result) {
-        const el = document.getElementById('os_summary');
-        let wellHtml = (result.wellSummaries || [])
-            .map(w => `<span style="margin-right:12px;">🍺 ${w.wellName}: ${w.itemsSeeded} SKU(s)</span>`)
-            .join('');
-        el.innerHTML = `
-            <h4>✅ Opening Stock Saved — ${result.barName}</h4>
-            <p>📦 Stockroom: <strong>${result.stockroomLinesCreated}</strong> SKU(s) seeded</p>
-            <p>🍺 Wells: <strong>${result.wellLinesCreated}</strong> line(s) across ${(result.wellSummaries || []).length} well(s)</p>
-            ${wellHtml ? `<p style="margin-top:8px;">${wellHtml}</p>` : ''}
-            <p style="margin-top:8px;color:#888;font-size:12px;">Bar owner can now log in and start their first session with pre-populated stock.</p>
-        `;
+    function resetOpeningStockForm() {
+        stockroomRows = [];
+        barWells = [];
+        allCatalogSkus = [];
+
+        document.getElementById('skuSearchInput').value = '';
+        document.getElementById('skuSuggestions').style.display = 'none';
+
+        renderStockroomTable();
+        renderWellsTables();
+        updateOpeningStockSummary();
+        hideStockMessages();
+
+        const btn = document.getElementById('saveOpeningStockBtn');
+        btn.disabled = false;
+        btn.textContent = '✅ Save Opening Stock';
+    }
+
+    function updateOpeningStockSummary() {
+        const barSelect = document.getElementById('osBarSelect');
+        const selectedText = barSelect.value
+            ? barSelect.options[barSelect.selectedIndex].textContent
+            : 'Not selected';
+
+        const skuCount = stockroomRows.filter(row => Number(row.openingQty || 0) > 0).length;
+        const stockroomUnits = stockroomRows.reduce((sum, row) => sum + Number(row.openingQty || 0), 0);
+
+        let wellUnits = 0;
+        barWells.forEach(well => {
+            if (!well.lines) return;
+            well.lines.forEach(line => {
+                wellUnits += Number(line.openingQty || 0);
+            });
+        });
+
+        document.getElementById('summarySelectedBar').textContent = `Bar: ${selectedText}`;
+        document.getElementById('summarySkuCount').textContent = `SKUs: ${skuCount}`;
+        document.getElementById('summaryStockroomUnits').textContent = `Stockroom Units: ${stockroomUnits}`;
+        document.getElementById('summaryWellUnits').textContent = `Well Units: ${wellUnits}`;
+    }
+
+    function showStockSuccess(message) {
+        const el = document.getElementById('stockSuccessMsg');
+        el.textContent = '✅ ' + message;
         el.style.display = 'block';
-        el.scrollIntoView({ behavior: 'smooth' });
     }
 
-    function showError(msg) {
-        const el = document.getElementById('os_errorMsg');
-        el.textContent = '❌ ' + msg;
+    function showStockError(message) {
+        const el = document.getElementById('stockErrorMsg');
+        el.textContent = '❌ ' + message;
         el.style.display = 'block';
     }
 
-    function hideError() {
-        document.getElementById('os_errorMsg').style.display = 'none';
+    function hideStockMessages() {
+        const success = document.getElementById('stockSuccessMsg');
+        const error = document.getElementById('stockErrorMsg');
+
+        success.style.display = 'none';
+        error.style.display = 'none';
+        success.textContent = '';
+        error.textContent = '';
     }
 
-    // ── Bar/Sub modals ────────────────────────────────────────
-    function openEditBar(barId) { activeBarId = barId; document.getElementById('editBarModal').classList.add('open'); }
-    function openEditSub(barId) { activeBarId = barId; document.getElementById('editSubModal').classList.add('open'); }
-    function closeModal(id) { document.getElementById(id).classList.remove('open'); activeBarId = null; }
+    function openEditBar(barId) {
+        activeBarId = barId;
+
+        const modal = document.getElementById('editBarModal');
+        if (modal) modal.classList.add('open');
+    }
+
+    function openEditSub(barId) {
+        activeBarId = barId;
+
+        const modal = document.getElementById('editSubModal');
+        if (modal) modal.classList.add('open');
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+
+        if (modal) modal.classList.remove('open');
+
+        activeBarId = null;
+    }
 
     function submitEditBar() {
+        if (!activeBarId) {
+            alert('No bar selected.');
+            return;
+        }
+
         const payload = {
-            barName: document.getElementById('eb_barName').value,
-            ownerName: document.getElementById('eb_ownerName').value,
-            phone: document.getElementById('eb_phone').value,
-            email: document.getElementById('eb_email').value,
-            licenseNumber: document.getElementById('eb_license').value,
-            city: document.getElementById('eb_city').value,
-            state: document.getElementById('eb_state').value,
-            pincode: document.getElementById('eb_pincode').value,
-            address: document.getElementById('eb_address').value,
-            status: document.getElementById('eb_status').value
+            barName: document.getElementById('eb_barName')?.value || '',
+            ownerName: document.getElementById('eb_ownerName')?.value || '',
+            phone: document.getElementById('eb_phone')?.value || '',
+            email: document.getElementById('eb_email')?.value || '',
+            licenseNumber: document.getElementById('eb_license')?.value || '',
+            city: document.getElementById('eb_city')?.value || '',
+            state: document.getElementById('eb_state')?.value || '',
+            pincode: document.getElementById('eb_pincode')?.value || '',
+            address: document.getElementById('eb_address')?.value || '',
+            status: document.getElementById('eb_status')?.value || 'ACTIVE'
         };
+
         fetch(`/admin/bars/${activeBarId}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(payload)
-        }).then(r => { if (r.ok) { closeModal('editBarModal'); location.reload(); } });
+        }).then(response => {
+            if (response.ok) {
+                closeModal('editBarModal');
+                location.reload();
+            } else {
+                alert('Failed to update bar.');
+            }
+        }).catch(() => alert('Failed to update bar.'));
     }
 
     function submitEditSub() {
+        if (!activeBarId) {
+            alert('No bar selected.');
+            return;
+        }
+
         const payload = {
-            status: document.getElementById('sub_status').value,
-            trialType: document.getElementById('sub_trialType').value,
-            startDate: document.getElementById('sub_startDate').value || null,
-            endDate: document.getElementById('sub_endDate').value || null
+            status: document.getElementById('sub_status')?.value || 'SUBSCRIBED',
+            trialType: document.getElementById('sub_trialType')?.value || 'MONTHLY',
+            startDate: document.getElementById('sub_startDate')?.value || null,
+            endDate: document.getElementById('sub_endDate')?.value || null
         };
+
         fetch(`/admin/bars/${activeBarId}/subscription`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(payload)
-        }).then(r => { if (r.ok) { closeModal('editSubModal'); location.reload(); } });
+        }).then(response => {
+            if (response.ok) {
+                closeModal('editSubModal');
+                location.reload();
+            } else {
+                alert('Failed to update subscription.');
+            }
+        }).catch(() => alert('Failed to update subscription.'));
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
     }
 </script>
+
 </body>
 </html>

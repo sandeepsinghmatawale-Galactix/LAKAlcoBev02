@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>Product Pricing</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+    font-family:Arial,sans-serif;
+    margin:0;
+    background:#f4f6f9;
+    color:#333;
+}
+
+header{
+    background:white;
+    padding:16px 30px;
+    border-bottom:2px solid #ddd;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+main{
+    padding:30px;
+}
+
+.card{
+    background:white;
+    border:1px solid #e0e0e0;
+    border-radius:8px;
+    padding:22px;
+    box-shadow:0 2px 6px rgba(0,0,0,.06);
+}
+
+h2{
+    margin:0 0 6px;
+}
+
+p{
+    margin:0 0 20px;
+    color:#777;
+    font-size:13px;
+}
+
+.alert{
+    display:none;
+    padding:12px 16px;
+    border-radius:6px;
+    margin-bottom:15px;
+    font-weight:bold;
+}
+
+.success{
+    background:#e6f4ea;
+    color:#2d8e47;
+}
+
+.error{
+    background:#fce8e6;
+    color:#c5221f;
+}
+
+.toolbar{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:18px;
+}
+
+.search{
+    flex:1;
+    padding:10px 12px;
+    border:1px solid #ccc;
+    border-radius:5px;
+}
+
+.btn{
+    border:none;
+    border-radius:5px;
+    padding:9px 14px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.btn-blue{
+    background:#1a73e8;
+    color:white;
+}
+
+.btn-green{
+    background:#34a853;
+    color:white;
+}
+
+.btn-gray{
+    background:#f1f3f4;
+    color:#333;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:14px;
+}
+
+thead{
+    background:#f8f9fa;
+}
+
+th{
+    padding:12px;
+    text-align:left;
+    font-size:12px;
+    text-transform:uppercase;
+    color:#777;
+    border-bottom:1px solid #ddd;
+}
+
+td{
+    padding:10px 12px;
+    border-bottom:1px solid #eee;
+    vertical-align:middle;
+}
+
+tr:hover td{
+    background:#fafafa;
+}
+
+.price-input{
+    width:120px;
+    padding:8px;
+    border:1px solid #ccc;
+    border-radius:4px;
+}
+
+.price-input.invalid{
+    border-color:#c5221f;
+    background:#fff4f3;
+}
+
+.badge{
+    padding:4px 9px;
+    border-radius:12px;
+    font-size:11px;
+    font-weight:bold;
+    display:inline-block;
+}
+
+.locked{
+    background:#e8f0fe;
+    color:#1a73e8;
+}
+
+.manual{
+    background:#fff4ce;
+    color:#9a6700;
+}
+
+.margin-low{
+    background:#fce8e6;
+    color:#c5221f;
+}
+
+.margin-medium{
+    background:#fff4ce;
+    color:#9a6700;
+}
+
+.margin-good{
+    background:#e6f4ea;
+    color:#2d8e47;
+}
+
+.profit-positive{
+    color:#2d8e47;
+    font-weight:bold;
+}
+
+.profit-zero{
+    color:#777;
+    font-weight:bold;
+}
+
+.profit-negative{
+    color:#c5221f;
+    font-weight:bold;
+}
+
+.small-note{
+    display:block;
+    margin-top:4px;
+    font-size:11px;
+    color:#777;
+}
+
+.empty{
+    padding:30px;
+    text-align:center;
+    color:#aaa;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div>
+        <strong>💰 Product Pricing</strong>
+        <div style="font-size:12px;color:#888;">Set selling price for your bar products</div>
+    </div>
+
+    <button class="btn btn-gray" onclick="window.location='/bar/dashboard'">
+        ← Back
+    </button>
+</header>
+
+<main>
+
+<div id="successMsg" class="alert success"></div>
+<div id="errorMsg" class="alert error"></div>
+
+<div class="card">
+    <h2>Bar Product Pricing</h2>
+    <p>
+        Selling price must be equal to or higher than purchase price.
+        Profit and markup update instantly when you change selling price.
+    </p>
+
+    <div class="toolbar">
+        <input id="searchInput"
+               class="search"
+               type="text"
+               placeholder="Search brand, size, pack..."
+               oninput="renderTable()">
+
+        <button class="btn btn-blue" onclick="loadPricing()">🔄 Refresh</button>
+    </div>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Brand</th>
+            <th>Size</th>
+            <th>Pack</th>
+            <th>MRP</th>
+            <th>Purchase Price</th>
+            <th>Selling Price</th>
+            <th>Profit / Unit</th>
+            <th>Markup %</th>
+            <th>Mode</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+
+        <tbody id="pricingBody">
+        <tr>
+            <td colspan="10" class="empty">Loading pricing...</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+</main>
+
+<script>
+let pricingRows = [];
+
+function showSuccess(msg){
+    const el = document.getElementById('successMsg');
+    el.textContent = '✅ ' + msg;
+    el.style.display = 'block';
+    document.getElementById('errorMsg').style.display = 'none';
+}
+
+function showError(msg){
+    const el = document.getElementById('errorMsg');
+    el.textContent = '❌ ' + msg;
+    el.style.display = 'block';
+    document.getElementById('successMsg').style.display = 'none';
+}
+
+async function loadPricing(){
+    const tbody = document.getElementById('pricingBody');
+    tbody.innerHTML = `<tr><td colspan="10" class="empty">Loading pricing...</td></tr>`;
+
+    try{
+        const res = await fetch('/inventory/bar-pricing/my');
+
+        if(!res.ok){
+            throw new Error('Failed to load pricing.');
+        }
+
+        pricingRows = await res.json();
+        renderTable();
+
+    }catch(e){
+        showError(e.message);
+        tbody.innerHTML = `<tr><td colspan="10" class="empty">Unable to load pricing.</td></tr>`;
+    }
+}
+
+function renderTable(){
+    const tbody = document.getElementById('pricingBody');
+    const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
+
+    const rows = pricingRows.filter(p => {
+        const text = `${p.cachedBrandName || ''} ${p.cachedSizeMl || ''} ${p.cachedPackagingType || ''}`.toLowerCase();
+        return text.includes(keyword);
+    });
+
+    tbody.innerHTML = '';
+
+    if(rows.length === 0){
+        tbody.innerHTML = `<tr><td colspan="10" class="empty">No pricing records found.</td></tr>`;
+        return;
+    }
+
+    rows.forEach(p => {
+        const tr = document.createElement('tr');
+
+        const purchase = Number(p.purchasePrice || 0);
+        const selling = Number(p.sellingPrice || 0);
+        const metrics = calculatePricingMetrics(purchase, selling);
+
+        tr.innerHTML = `
+            <td><b>${escapeHtml(p.cachedBrandName)}</b></td>
+            <td>${escapeHtml(p.cachedSizeMl)} ml</td>
+            <td>${escapeHtml(p.cachedPackagingType)}</td>
+            <td>₹${formatMoney(p.cachedMrp)}</td>
+            <td>₹${formatMoney(p.purchasePrice)}</td>
+            <td>
+                <input class="price-input"
+                       id="price_${p.id}"
+                       type="number"
+                       min="${purchase}"
+                       step="0.01"
+                       value="${escapeHtml(p.sellingPrice ?? '')}"
+                       oninput="updateLiveMargin(${p.id}, ${purchase})">
+                <span class="small-note">Min: ₹${formatMoney(purchase)}</span>
+            </td>
+            <td id="profit_${p.id}" class="${metrics.profitClass}">
+                ₹${metrics.profit}
+            </td>
+            <td id="margin_${p.id}">
+                <span class="badge ${metrics.marginClass}">
+                    ${metrics.marginLabel}
+                </span>
+            </td>
+            <td>
+                <span class="badge ${p.priceLockedToMrp ? 'locked' : 'manual'}">
+                    ${p.priceLockedToMrp ? 'MRP Locked' : 'Manual'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-green" onclick="savePrice(${p.id}, ${purchase})">
+                    Save
+                </button>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+}
+
+function updateLiveMargin(pricingId, purchasePrice){
+    const input = document.getElementById('price_' + pricingId);
+    const profitEl = document.getElementById('profit_' + pricingId);
+    const marginEl = document.getElementById('margin_' + pricingId);
+
+    const sellingPrice = Number(input.value || 0);
+    const metrics = calculatePricingMetrics(Number(purchasePrice || 0), sellingPrice);
+
+    profitEl.textContent = '₹' + metrics.profit;
+    profitEl.className = metrics.profitClass;
+
+    marginEl.innerHTML = `
+        <span class="badge ${metrics.marginClass}">
+            ${metrics.marginLabel}
+        </span>
+    `;
+
+    if (purchasePrice > 0 && sellingPrice < purchasePrice) {
+        input.classList.add('invalid');
+    } else {
+        input.classList.remove('invalid');
+    }
+}
+
+function calculatePricingMetrics(purchasePrice, sellingPrice){
+    const purchase = Number(purchasePrice || 0);
+    const selling = Number(sellingPrice || 0);
+
+    const profit = selling - purchase;
+
+    let markup = 0;
+
+    if (purchase > 0) {
+        markup = ((selling - purchase) / purchase) * 100;
+    }
+
+    let marginClass = 'margin-low';
+    let marginText = 'Low';
+
+    if (markup >= 40) {
+        marginClass = 'margin-good';
+        marginText = 'Good';
+    } else if (markup >= 20) {
+        marginClass = 'margin-medium';
+        marginText = 'Medium';
+    }
+
+    let profitClass = 'profit-zero';
+
+    if (profit > 0) {
+        profitClass = 'profit-positive';
+    } else if (profit < 0) {
+        profitClass = 'profit-negative';
+    }
+
+    return {
+        profit: profit.toFixed(2),
+        markup: markup.toFixed(2),
+        marginClass,
+        profitClass,
+        marginLabel: markup.toFixed(2) + '% · ' + marginText
+    };
+}
+
+async function savePrice(pricingId, purchasePrice){
+    const input = document.getElementById('price_' + pricingId);
+    const sellingPrice = Number(input.value || 0);
+
+    if(sellingPrice <= 0){
+        showError('Selling price must be greater than zero.');
+        return;
+    }
+
+    if(purchasePrice > 0 && sellingPrice < purchasePrice){
+        showError('Selling price cannot be lower than purchase price.');
+        input.classList.add('invalid');
+        return;
+    }
+
+    try{
+        const res = await fetch('/inventory/bar-pricing/my/' + pricingId + '?sellingPrice=' + sellingPrice, {
+            method:'PATCH'
+        });
+
+        if(!res.ok){
+            let msg = 'Failed to update selling price.';
+            try{
+                const err = await res.json();
+                msg = err.error || err.message || msg;
+            }catch(e){}
+            throw new Error(msg);
+        }
+
+        showSuccess('Selling price updated.');
+        await loadPricing();
+
+    }catch(e){
+        showError(e.message);
+    }
+}
+
+function formatMoney(value){
+    if(value === null || value === undefined || value === ''){
+        return '-';
+    }
+
+    const number = Number(value);
+
+    if(Number.isNaN(number)){
+        return '-';
+    }
+
+    return number.toFixed(2);
+}
+
+function escapeHtml(value){
+    return String(value ?? '')
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'","&#039;");
+}
+
+loadPricing();
+</script>
+
+</body>
+</html>

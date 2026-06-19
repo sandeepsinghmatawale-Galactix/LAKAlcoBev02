@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Select Store</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f4f6f9;
+            color: #333;
+        }
+
+        header {
+            background: white;
+            padding: 16px 30px;
+            border-bottom: 2px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        main {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .title-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .title-card h2 {
+            margin: 0;
+            font-size: 24px;
+            color: #1a73e8;
+        }
+
+        .title-card p {
+            margin: 8px 0 0;
+            color: #777;
+            font-size: 14px;
+        }
+
+        .store-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .store-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .store-card h3 {
+            margin: 0 0 8px;
+            font-size: 18px;
+        }
+
+        .store-card p {
+            margin: 4px 0;
+            font-size: 13px;
+            color: #777;
+        }
+
+        .btn-primary {
+            margin-top: 14px;
+            width: 100%;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-primary:hover {
+            background: #1557b0;
+        }
+
+        .empty {
+            background: white;
+            padding: 30px;
+            text-align: center;
+            color: #999;
+            border: 1px dashed #ddd;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div>
+        <strong>🍺 BarInventory</strong>
+        <div style="font-size:12px;color:#888;">Select Store</div>
+    </div>
+
+    <form th:action="@{/logout}" method="post">
+        <button type="submit"
+                style="background:#ea4335;color:white;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-weight:bold;">
+            Logout
+        </button>
+    </form>
+</header>
+
+<main>
+    <div class="title-card">
+        <h2>Select Store</h2>
+        <p>You have access to multiple bars. Choose which store you want to operate.</p>
+    </div>
+
+    <div class="store-grid" th:if="${!#lists.isEmpty(bars)}">
+        <div class="store-card" th:each="bar : ${bars}">
+            <h3 th:text="${bar.barName}">Bar Name</h3>
+            <p>Bar ID: <span th:text="${bar.barId}">1</span></p>
+            <p th:text="${bar.city != null ? bar.city : '-'}">City</p>
+
+            <form th:action="@{/select-store}" method="post">
+                <input type="hidden" name="barId" th:value="${bar.barId}">
+                <button type="submit" class="btn-primary">
+                    Continue
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="empty" th:if="${#lists.isEmpty(bars)}">
+        No active store access found for this user.
+    </div>
+</main>
+
+</body>
+</html>

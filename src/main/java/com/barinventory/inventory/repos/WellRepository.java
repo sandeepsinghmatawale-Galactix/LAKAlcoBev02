@@ -29,5 +29,7 @@ public interface WellRepository extends JpaRepository<Well, Long> {
     
 
     Optional<Well> findByBarIdAndWellNameIgnoreCase(Long barId, String wellName);
+    
+    long countByBarIdAndActiveTrue(Long barId);
  
 }

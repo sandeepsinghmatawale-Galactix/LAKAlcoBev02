@@ -11,11 +11,15 @@ import org.springframework.stereotype.Service;
 import com.barinventory.admin.dtos.OnboardStoreRequest;
 import com.barinventory.admin.dtos.OpeningStockEntry;
 import com.barinventory.admin.dtos.WellOpeningStockEntry;
+import com.barinventory.admin.enums.BarRole;
 import com.barinventory.admin.enums.BarStatus;
 import com.barinventory.auth.entities.Bar;
 import com.barinventory.auth.entities.BarUser;
+import com.barinventory.auth.entities.UserBarAccess;
 import com.barinventory.auth.enums.Role;
 import com.barinventory.auth.repos.BarRepository;
+import com.barinventory.auth.repos.BarUserRepository;
+import com.barinventory.auth.repos.UserBarAccessRepository;
 import com.barinventory.inventory.entities.BarProductPricing;
 import com.barinventory.inventory.entities.StockBatch;
 import com.barinventory.inventory.entities.StockroomInventory;
@@ -31,153 +35,212 @@ import com.barinventory.subscriptions.enums.SubscriptionStatus;
 import com.barinventory.subscriptions.enums.TrialType;
 import com.barinventory.subscriptions.repository.SubscriptionRepository;
 
-import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-//admin/services/AdminOnboardingService.java
 
 @Service
 @RequiredArgsConstructor
 public class AdminOnboardingService {
- private final EntityManager entityManager;
- private final PasswordEncoder passwordEncoder;
- private final BarRepository barRepository;
- private final WellRepository wellRepository;
- private final StockBatchRepository stockBatchRepository;
- private final StockroomInventoryRepository stockroomInventoryRepository;
- private final WellInventoryRepository wellInventoryRepository;
- private final BarProductPricingRepository barProductPricingRepository;
- private final SubscriptionRepository subscriptionRepository;
 
- @Transactional
- public Long onboardNewStore(OnboardStoreRequest req) {
-     // 1. Create Bar
-     Bar bar = new Bar();
-     bar.setBarName(req.getStoreName());
-     bar.setOwnerName(req.getOwnerName());
-     bar.setPhone(req.getPhone());
-     bar.setEmail(req.getEmail());
-     bar.setLicenseNumber(req.getLicenseNumber());
-     bar.setAddress(req.getAddress());
-     bar.setCity(req.getCity());
-     bar.setState(req.getState());
-     bar.setPincode(req.getPincode());
-     bar.setStatus(BarStatus.ACTIVE);
-     bar.setCreatedAt(LocalDateTime.now());
-     bar.setUpdatedAt(LocalDateTime.now());
-     bar = barRepository.save(bar);
-     Long barId = bar.getBarId();
+	private final PasswordEncoder passwordEncoder;
+	private final BarRepository barRepository;
+	private final BarUserRepository barUserRepository;
+	private final UserBarAccessRepository userBarAccessRepository;
+	private final WellRepository wellRepository;
+	private final StockBatchRepository stockBatchRepository;
+	private final StockroomInventoryRepository stockroomInventoryRepository;
+	private final WellInventoryRepository wellInventoryRepository;
+	private final BarProductPricingRepository barProductPricingRepository;
+	private final SubscriptionRepository subscriptionRepository;
 
-     // 2. Create BarUser
-     BarUser user = new BarUser();
-     user.setUsername(req.getAdminUsername());
-     user.setPassword(passwordEncoder.encode(req.getAdminPassword()));
-     user.setBarId(barId);
-     user.setRole(Role.BUSINESS_OWNER);
-     entityManager.persist(user);
+	@Transactional
+	public Long onboardNewStore(OnboardStoreRequest req) {
 
-     // 3. Subscription
-     Subscription sub = new Subscription();
-     sub.setBarId(barId);
-     sub.setStatus(SubscriptionStatus.SUBSCRIBED);
-     sub.setTrialType(req.getTrialType());
-     if (req.getTrialType() == TrialType.CUSTOM) {
-         sub.setStartDate(req.getCustomStartDate());
-         sub.setEndDate(req.getCustomEndDate());
-     } else {
-         sub.setStartDate(LocalDateTime.now());
-         sub.setEndDate(calculateExpiry(req.getTrialType()));
-     }
-     subscriptionRepository.save(sub);
+		LocalDateTime now = LocalDateTime.now();
 
-     // 4. Create Wells
-  // 4. Create Wells
-     Map<String, Long> wellNameToId = new HashMap<>();
+		Bar bar = new Bar();
+		bar.setBarName(req.getStoreName());
+		bar.setOwnerName(req.getOwnerName());
+		bar.setPhone(req.getPhone());
+		bar.setEmail(req.getEmail());
+		bar.setLicenseNumber(req.getLicenseNumber());
+		bar.setAddress(req.getAddress());
+		bar.setCity(req.getCity());
+		bar.setState(req.getState());
+		bar.setPincode(req.getPincode());
+		bar.setStatus(BarStatus.ACTIVE);
+		bar.setCreatedAt(now);
+		bar.setUpdatedAt(now);
 
-     if (req.getWellNames() != null) {
-         for (String wellName : req.getWellNames()) {
+		bar = barRepository.save(bar);
+		Long barId = bar.getBarId();
 
-             if (wellName == null || wellName.isBlank()) {
-                 continue;
-             }
+		BarUser user = new BarUser();
+		user.setUsername(req.getAdminUsername());
+		user.setPassword(passwordEncoder.encode(req.getAdminPassword()));
+		user.setBarId(barId); // keep for current app compatibility
+		user.setRole(Role.BUSINESS_OWNER);
 
-             String cleanedWellName = wellName.trim();
+		user = barUserRepository.save(user);
 
-             Optional<Well> existingWell =
-                     wellRepository.findByBarIdAndWellNameIgnoreCase(barId, cleanedWellName);
+		createUserBarAccessIfMissing(user.getId(), barId, BarRole.BAR_OWNER);
 
-             Well well = existingWell.orElseGet(() -> {
-                 Well newWell = new Well();
-                 newWell.setWellName(cleanedWellName);
-                 newWell.setBarId(barId);
-                 newWell.setActive(true);
-                 return wellRepository.save(newWell);
-             });
+		Subscription sub = new Subscription();
+		sub.setBarId(barId);
+		sub.setStatus(SubscriptionStatus.SUBSCRIBED);
+		sub.setTrialType(req.getTrialType());
 
-             wellNameToId.put(cleanedWellName, well.getWellId());
-         }
-     }
+		if (req.getTrialType() == TrialType.CUSTOM) {
+			sub.setStartDate(req.getCustomStartDate());
+			sub.setEndDate(req.getCustomEndDate());
+		} else {
+			sub.setStartDate(now);
+			sub.setEndDate(calculateExpiry(req.getTrialType(), now));
+		}
 
-     // 5. Seed Stockroom Opening Stock
-     if (req.getStockroomOpeningStock() != null) {
-         for (OpeningStockEntry entry : req.getStockroomOpeningStock()) {
-             // StockBatch for FIFO cost tracking
-             StockBatch batch = new StockBatch();
-             batch.setBarId(barId);
-             batch.setDepotPackId(entry.depotPackId());
-             batch.setQuantityReceived(entry.openingQty());
-             batch.setQuantityRemaining(entry.openingQty());
-             batch.setPurchasePricePerUnit(entry.purchasePricePerUnit());
-             batch.setInvoiceRefNo(entry.invoiceRefNo());
-             batch.setReceivedAt(LocalDateTime.now());
-             batch.setCreatedAt(LocalDateTime.now());
-             stockBatchRepository.save(batch);
+		subscriptionRepository.save(sub);
 
-             // StockroomInventory for daily session tracking
-             StockroomInventory stockroom = new StockroomInventory();
-             stockroom.setBarId(barId);
-             stockroom.setDepotBrandSizeId(entry.depotBrandSizeId());
-             stockroom.setOpeningStock(entry.openingQty());
-             stockroom.setReceivedStock(0);
-             stockroom.setClosingStock(entry.openingQty());
-             stockroom.setSaleStock(0);
-             stockroomInventoryRepository.save(stockroom);
-         }
-     }
+		Map<String, Long> wellNameToId = createWellsForBar(barId, req);
 
-     // 6. Seed Well Opening Stock
-     if (req.getWellOpeningStock() != null) {
-         for (WellOpeningStockEntry entry : req.getWellOpeningStock()) {
-             Long wellId = wellNameToId.get(entry.wellName());
-             if (wellId == null) continue;
+		seedStockroomOpeningStock(barId, req);
 
-             BarProductPricing pricing = barProductPricingRepository
-                 .findByBarIdAndDepotPackId(barId, entry.depotPackId())
-                 .orElse(null);
-             if (pricing == null) continue;
+		seedWellOpeningStock(barId, req, wellNameToId);
 
-             WellInventory wellInventory = new WellInventory();
-             wellInventory.setBarId(barId);
-             wellInventory.setWell(wellRepository.findById(wellId).orElseThrow());
-             wellInventory.setProductPricing(pricing);
-             wellInventory.setOpeningStock(entry.openingQty());
-             wellInventory.setReceivedStock(0);
-             wellInventory.setClosingStock(entry.openingQty());
-             wellInventory.setSaleStock(0);
-             wellInventoryRepository.save(wellInventory);
-         }
-     }
+		return barId;
+	}
 
-     return barId;
- }
+	private void createUserBarAccessIfMissing(Long userId, Long barId, BarRole barRole) {
 
- private LocalDateTime calculateExpiry(TrialType type) {
-     return switch (type) {
-         case WEEKLY -> LocalDateTime.now().plusWeeks(1);
-         case MONTHLY -> LocalDateTime.now().plusMonths(1);
-         case THREE_MONTH -> LocalDateTime.now().plusMonths(3);
-         case YEARLY -> LocalDateTime.now().plusYears(1);
-         default -> LocalDateTime.now().plusMonths(1);
-     };
- }
+		if (userBarAccessRepository.existsByUserIdAndBarId(userId, barId)) {
+			return;
+		}
+
+		LocalDateTime now = LocalDateTime.now();
+
+		UserBarAccess access = new UserBarAccess();
+
+		access.setUserId(userId);
+		access.setBarId(barId);
+		access.setBarRole(barRole);
+		access.setActive(true);
+
+		// TODO:
+		// Later replace with logged-in admin id
+		access.setGrantedBy(1L);
+
+		access.setCreatedAt(now);
+		access.setUpdatedAt(now);
+
+		userBarAccessRepository.save(access);
+	}
+
+	private Map<String, Long> createWellsForBar(Long barId, OnboardStoreRequest req) {
+		Map<String, Long> wellNameToId = new HashMap<>();
+
+		if (req.getWellNames() == null) {
+			return wellNameToId;
+		}
+
+		for (String wellName : req.getWellNames()) {
+			if (wellName == null || wellName.isBlank()) {
+				continue;
+			}
+
+			String cleanedWellName = wellName.trim();
+
+			Optional<Well> existingWell = wellRepository.findByBarIdAndWellNameIgnoreCase(barId, cleanedWellName);
+
+			Well well = existingWell.orElseGet(() -> {
+				Well newWell = new Well();
+				newWell.setWellName(cleanedWellName);
+				newWell.setBarId(barId);
+				newWell.setActive(true);
+				return wellRepository.save(newWell);
+			});
+
+			if (Boolean.FALSE.equals(well.getActive())) {
+				well.setActive(true);
+				well = wellRepository.save(well);
+			}
+
+			wellNameToId.put(cleanedWellName, well.getWellId());
+		}
+
+		return wellNameToId;
+	}
+
+	private void seedStockroomOpeningStock(Long barId, OnboardStoreRequest req) {
+		if (req.getStockroomOpeningStock() == null) {
+			return;
+		}
+
+		LocalDateTime now = LocalDateTime.now();
+
+		for (OpeningStockEntry entry : req.getStockroomOpeningStock()) {
+			StockBatch batch = new StockBatch();
+			batch.setBarId(barId);
+			batch.setDepotPackId(entry.depotPackId());
+			batch.setQuantityReceived(entry.openingQty());
+			batch.setQuantityRemaining(entry.openingQty());
+			batch.setPurchasePricePerUnit(entry.purchasePricePerUnit());
+			batch.setInvoiceRefNo(entry.invoiceRefNo());
+			batch.setReceivedAt(now);
+			batch.setCreatedAt(now);
+
+			stockBatchRepository.save(batch);
+
+			StockroomInventory stockroom = new StockroomInventory();
+			stockroom.setBarId(barId);
+			stockroom.setDepotBrandSizeId(entry.depotBrandSizeId());
+			stockroom.setOpeningStock(entry.openingQty());
+			stockroom.setReceivedStock(0);
+			stockroom.setClosingStock(entry.openingQty());
+			stockroom.setSaleStock(0);
+
+			stockroomInventoryRepository.save(stockroom);
+		}
+	}
+
+	private void seedWellOpeningStock(Long barId, OnboardStoreRequest req, Map<String, Long> wellNameToId) {
+
+		if (req.getWellOpeningStock() == null) {
+			return;
+		}
+
+		for (WellOpeningStockEntry entry : req.getWellOpeningStock()) {
+			Long wellId = wellNameToId.get(entry.wellName());
+
+			if (wellId == null) {
+				continue;
+			}
+
+			BarProductPricing pricing = barProductPricingRepository
+					.findByBarIdAndDepotPackId(barId, entry.depotPackId()).orElse(null);
+
+			if (pricing == null) {
+				continue;
+			}
+
+			WellInventory wellInventory = new WellInventory();
+			wellInventory.setBarId(barId);
+			wellInventory.setWell(wellRepository.findById(wellId).orElseThrow());
+			wellInventory.setProductPricing(pricing);
+			wellInventory.setOpeningStock(entry.openingQty());
+			wellInventory.setReceivedStock(0);
+			wellInventory.setClosingStock(entry.openingQty());
+			wellInventory.setSaleStock(0);
+
+			wellInventoryRepository.save(wellInventory);
+		}
+	}
+
+	private LocalDateTime calculateExpiry(TrialType type, LocalDateTime start) {
+		return switch (type) {
+		case WEEKLY -> start.plusWeeks(1);
+		case MONTHLY -> start.plusMonths(1);
+		case THREE_MONTH -> start.plusMonths(3);
+		case YEARLY -> start.plusYears(1);
+		default -> start.plusMonths(1);
+		};
+	}
 }

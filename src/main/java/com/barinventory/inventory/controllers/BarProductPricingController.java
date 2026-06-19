@@ -45,4 +45,21 @@ public class BarProductPricingController {
 	public List<BarProductPricingResponse> getByBar(@RequestParam Long barId) {
 		return pricingService.getByBar(barId);
 	}
+	
+	@GetMapping("/my")
+	public List<BarProductPricingResponse> getMyPricing() {
+	    return pricingService.getMyBarPricing();
+	}
+	@PatchMapping("/my/{pricingId}")
+	public BarProductPricingResponse updateMySellingPrice(
+	        @PathVariable Long pricingId,
+	        @RequestParam Double sellingPrice) {
+
+	    return pricingService.updateMySellingPrice(
+	            pricingId,
+	            sellingPrice);
+	}
+	
+	
+	
 }

@@ -19,7 +19,7 @@ public interface BarProductPricingRepository extends JpaRepository<BarProductPri
 
 	List<BarProductPricing> findByDepotPackId(Long depotPackId); // for cross-bar MRP sync
 	
-	 
+	Optional<BarProductPricing> findByIdAndBarId(Long id, Long barId);
 	 
 
 }

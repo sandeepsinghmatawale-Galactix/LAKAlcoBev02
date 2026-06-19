@@ -1,65 +1,80 @@
-package com.barinventory.config; 
+package com.barinventory.config;
+
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
-import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
-import org.springframework.security.web.savedrequest.RequestCache;
-import org.springframework.security.web.savedrequest.SavedRequest;
 import org.springframework.stereotype.Component;
+
+import com.barinventory.auth.entities.UserBarAccess;
 import com.barinventory.auth.enums.Role;
+import com.barinventory.auth.repos.UserBarAccessRepository;
+import com.barinventory.auth.servcies.CustomUserDetails;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 
 @Component
+@RequiredArgsConstructor
 public class CustomAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    // Spring's utility to remember what page the unauthenticated user was originally trying to access
-    private final RequestCache requestCache = new HttpSessionRequestCache();
+	private final UserBarAccessRepository userBarAccessRepository;
 
-    @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                        Authentication authentication) throws IOException, ServletException {
-        
-        SavedRequest savedRequest = requestCache.getRequest(request, response);
+	@Override
+	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+			Authentication authentication) throws IOException, ServletException {
 
-        // 1. If the user was trying to access a specific page before logging in, send them there first
-        if (savedRequest != null) {
-            String targetUrl = savedRequest.getRedirectUrl();
-            clearAuthenticationAttributes(request);
-            getRedirectStrategy().sendRedirect(request, response, targetUrl);
-            return;
-        }
+		String targetUrl = determineTargetUrl(request, authentication);
 
-        // 2. Otherwise, route them to their designated domain dashboard
-        String targetUrl = determineTargetUrlByRole(authentication.getAuthorities());
-        
-        if (response.isCommitted()) {
-            logger.debug("Response has already been committed. Unable to redirect to " + targetUrl);
-            return;
-        }
+		if (response.isCommitted()) {
+			logger.debug("Response already committed. Unable to redirect to " + targetUrl);
+			return;
+		}
 
-        clearAuthenticationAttributes(request);
-        getRedirectStrategy().sendRedirect(request, response, targetUrl);
-    }
+		clearAuthenticationAttributes(request);
+		getRedirectStrategy().sendRedirect(request, response, targetUrl);
+	}
 
-    /**
-     * Determines the fallback landing URL based on the user's maximum assigned authority.
-     */
-    private String determineTargetUrlByRole(Collection<? extends GrantedAuthority> authorities) {
-        String adminAuthority = Role.ADMIN.getAuthority();       // "ROLE_ADMIN"
-        
-        for (GrantedAuthority grantedAuthority : authorities) {
-            String authority = grantedAuthority.getAuthority();
-            
-            if (authority.equals(adminAuthority)) {
-                return "/admin/dashboard";
-            }
-        }
-        
-        // Fallback for all inventory staff/owners
-        return "/sessions/create-page";
-    }
+	private String determineTargetUrl(HttpServletRequest request, Authentication authentication) {
+
+		if (hasRole(authentication.getAuthorities(), Role.ADMIN.getAuthority())) {
+			return "/admin/dashboard";
+		}
+
+		if (!(authentication.getPrincipal() instanceof CustomUserDetails userDetails)) {
+			return "/login";
+		}
+
+		List<UserBarAccess> accesses = userBarAccessRepository.findByUserIdAndActiveTrue(userDetails.getUserId());
+
+		if (accesses.isEmpty()) {
+
+			if (userDetails.getBarId() != null) {
+				request.getSession(true).setAttribute(SecurityUtils.SELECTED_BAR_ID, userDetails.getBarId());
+
+				return "/bar/dashboard";
+			}
+
+			return "/select-store";
+		}
+
+		if (accesses.size() == 1) {
+			Long barId = accesses.get(0).getBarId();
+
+			request.getSession(true).setAttribute(SecurityUtils.SELECTED_BAR_ID, barId);
+
+			return "/bar/dashboard";
+		}
+
+		return "/select-store";
+	}
+
+	private boolean hasRole(Collection<? extends GrantedAuthority> authorities, String role) {
+		return authorities.stream().anyMatch(authority -> authority.getAuthority().equals(role));
+	}
 }

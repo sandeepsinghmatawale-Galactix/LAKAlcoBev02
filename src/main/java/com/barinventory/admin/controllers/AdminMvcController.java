@@ -25,6 +25,9 @@ import com.barinventory.admin.services.DepotCatalogService;
 import com.barinventory.admin.services.DepotCategoryService;
 import com.barinventory.admin.services.DepotDistributorService;
 import com.barinventory.admin.services.DepotManufacturerService;
+import com.barinventory.subscriptions.dtos.AdminSubscriptionResponse;
+import com.barinventory.subscriptions.dtos.ExtendSubscriptionRequest;
+import com.barinventory.subscriptions.services.AdminSubscriptionService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -37,6 +40,7 @@ public class AdminMvcController {
     private final AdminOnboardingService onboardingService;
     private final AdminBarService barService;
     private final AdminDashboardService dashboardService;
+    private final AdminSubscriptionService adminSubscriptionService;
     private final DepotCategoryService categoryService;
     private final DepotManufacturerService manufacturerService;
     private final DepotDistributorService distributorService;
@@ -120,4 +124,25 @@ public class AdminMvcController {
 
         return "admin/admin-wells";
     }
+    @GetMapping("/subscriptions")
+    public String subscriptionsPage(Model model) {
+        model.addAttribute("subscriptions", adminSubscriptionService.getAllSubscriptions());
+        return "admin/admin-subscriptions";
+    }
+
+    @PatchMapping("/subscriptions/{subscriptionId}/extend")
+    @ResponseBody
+    public AdminSubscriptionResponse extendSubscription(
+            @PathVariable Long subscriptionId,
+            @RequestBody ExtendSubscriptionRequest request) {
+
+        return adminSubscriptionService.extendSubscription(
+                subscriptionId,
+                request.daysToAdd()
+        );
+    }
+    
+    
+    
+    
 }

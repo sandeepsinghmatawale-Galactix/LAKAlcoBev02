@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>Admin Subscriptions</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{background:#f5f7fb}
+.page-header{
+    background:white;
+    padding:20px;
+    border-bottom:1px solid #ddd;
+    margin-bottom:25px;
+}
+.card{
+    border:none;
+    border-radius:12px;
+}
+.status-good{background:#e6f4ea;color:#2d8e47}
+.status-warning{background:#fff4ce;color:#9a6700}
+.status-danger{background:#fce8e6;color:#c5221f}
+.badge-pill{
+    padding:6px 12px;
+    border-radius:20px;
+    font-weight:700;
+    display:inline-block;
+}
+.quick-btn{
+    margin:2px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="page-header">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+        <div>
+            <h3>📅 Subscription Management</h3>
+            <p class="text-muted mb-0">
+                Track expiry, renewal risk, and extend customer subscriptions.
+            </p>
+        </div>
+
+        <button class="btn btn-secondary" onclick="window.location='/admin/dashboard'">
+            ← Back to Admin Dashboard
+        </button>
+    </div>
+</div>
+
+<div class="container-fluid">
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <table class="table table-hover align-middle">
+                <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Bar</th>
+                    <th>Bar ID</th>
+                    <th>Status</th>
+                    <th>Plan</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Days Left</th>
+                    <th>Risk</th>
+                    <th>Extend</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="sub : ${subscriptions}" th:id="'row_' + ${sub.subscriptionId}">
+                    <td th:text="${sub.subscriptionId}"></td>
+
+                    <td>
+                        <strong th:text="${sub.barName}"></strong>
+                    </td>
+
+                    <td th:text="${sub.barId}"></td>
+
+                    <td th:id="'status_' + ${sub.subscriptionId}" th:text="${sub.status}"></td>
+
+                    <td th:text="${sub.trialType}"></td>
+
+                    <td th:text="${#temporals.format(sub.startDate, 'dd-MMM-yyyy HH:mm')}"></td>
+
+                    <td th:id="'end_' + ${sub.subscriptionId}"
+                        th:text="${#temporals.format(sub.endDate, 'dd-MMM-yyyy HH:mm')}"></td>
+
+                    <td>
+                        <strong th:id="'days_' + ${sub.subscriptionId}"
+                                th:text="${sub.daysRemaining + ' day(s)'}"></strong>
+                    </td>
+
+                    <td th:id="'risk_' + ${sub.subscriptionId}">
+                        <span th:if="${sub.daysRemaining > 15}"
+                              class="badge-pill status-good">
+                            Healthy
+                        </span>
+
+                        <span th:if="${sub.daysRemaining <= 15 and sub.daysRemaining > 7}"
+                              class="badge-pill status-warning">
+                            Renewal Soon
+                        </span>
+
+                        <span th:if="${sub.daysRemaining <= 7 and sub.daysRemaining >= 0}"
+                              class="badge-pill status-danger">
+                            High Risk
+                        </span>
+
+                        <span th:if="${sub.daysRemaining < 0}"
+                              class="badge-pill status-danger">
+                            Expired
+                        </span>
+                    </td>
+
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary quick-btn"
+                                th:onclick="'extendSubscription(' + ${sub.subscriptionId} + ',30)'">
+                            +30
+                        </button>
+
+                        <button class="btn btn-sm btn-outline-primary quick-btn"
+                                th:onclick="'extendSubscription(' + ${sub.subscriptionId} + ',90)'">
+                            +90
+                        </button>
+
+                        <button class="btn btn-sm btn-outline-primary quick-btn"
+                                th:onclick="'extendSubscription(' + ${sub.subscriptionId} + ',365)'">
+                            +365
+                        </button>
+
+                        <div class="input-group input-group-sm mt-1" style="width:140px;">
+                            <input type="number"
+                                   class="form-control"
+                                   min="1"
+                                   th:id="'customDays_' + ${sub.subscriptionId}"
+                                   placeholder="Days">
+
+                            <button class="btn btn-success"
+                                    th:onclick="'extendCustom(' + ${sub.subscriptionId} + ')'">
+                                Add
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr th:if="${#lists.isEmpty(subscriptions)}">
+                    <td colspan="10" class="text-center text-muted p-4">
+                        No subscriptions found.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+async function extendCustom(subscriptionId) {
+    const input = document.getElementById('customDays_' + subscriptionId);
+    const days = Number(input.value || 0);
+
+    if (days <= 0) {
+        alert('Enter valid number of days.');
+        return;
+    }
+
+    await extendSubscription(subscriptionId, days);
+    input.value = '';
+}
+
+async function extendSubscription(subscriptionId, daysToAdd) {
+
+    if (!confirm('Extend subscription by ' + daysToAdd + ' days?')) {
+        return;
+    }
+
+    try {
+        const res = await fetch('/admin/subscriptions/' + subscriptionId + '/extend', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                daysToAdd: daysToAdd
+            })
+        });
+
+        if (!res.ok) {
+            throw new Error('Failed to extend subscription.');
+        }
+
+        const updated = await res.json();
+
+        document.getElementById('status_' + subscriptionId).textContent = updated.status;
+        document.getElementById('end_' + subscriptionId).textContent = formatDate(updated.endDate);
+        document.getElementById('days_' + subscriptionId).textContent = updated.daysRemaining + ' day(s)';
+        document.getElementById('risk_' + subscriptionId).innerHTML = buildRiskBadge(updated.daysRemaining);
+
+        alert('Subscription extended successfully.');
+
+    } catch (e) {
+        alert(e.message);
+    }
+}
+
+function buildRiskBadge(days) {
+    if (days > 15) {
+        return '<span class="badge-pill status-good">Healthy</span>';
+    }
+
+    if (days <= 15 && days > 7) {
+        return '<span class="badge-pill status-warning">Renewal Soon</span>';
+    }
+
+    if (days <= 7 && days >= 0) {
+        return '<span class="badge-pill status-danger">High Risk</span>';
+    }
+
+    return '<span class="badge-pill status-danger">Expired</span>';
+}
+
+function formatDate(value) {
+    if (!value) return '-';
+
+    const d = new Date(value);
+
+    return d.toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+</script>
+
+</body>
+</html>

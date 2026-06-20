@@ -43,7 +43,7 @@ public class SubscriptionAlertScheduler {
 
         LocalDateTime windowStart = targetDate.atStartOfDay();
         LocalDateTime windowEnd = targetDate.atTime(LocalTime.MAX);
-
+        log.info("Checking subscriptions expiring on {}", targetDate);
         List<Subscription> expiringSubscriptions =
                 subscriptionRepository.findSubscriptionsExpiringBetween(
                         windowStart,
@@ -55,7 +55,7 @@ public class SubscriptionAlertScheduler {
                 expiringSubscriptions.size(),
                 daysBeforeExpiry
         );
-
+         
         for (Subscription sub : expiringSubscriptions) {
 
             try {
@@ -90,7 +90,9 @@ public class SubscriptionAlertScheduler {
                         e
                 );
             }
+            
         }
+        
     }
 
     private void sendExpiryAlertEmail(
@@ -102,7 +104,7 @@ public class SubscriptionAlertScheduler {
         SimpleMailMessage message = new SimpleMailMessage();
 
         message.setTo(recipientEmail);
-
+        log.info("Sending email to {}", recipientEmail);
         message.setSubject(
                 "⚠️ Subscription Expiry Reminder - "
                         + daysRemaining
@@ -120,5 +122,6 @@ public class SubscriptionAlertScheduler {
         );
 
         mailSender.send(message);
+        log.info("Email sent successfully to {}", recipientEmail);
     }
 }

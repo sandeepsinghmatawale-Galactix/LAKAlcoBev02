@@ -47,10 +47,14 @@ td{padding:10px 12px;border-bottom:1px solid #eee}
     <div class="filters">
         <div>
             <label><b>Report Type</b></label><br>
-            <select id="reportType" onchange="toggleCustomDates()">
-                <option value="DAILY">Daily</option>
-                <option value="CUSTOM">Custom</option>
-            </select>
+			<select id="reportType" onchange="toggleCustomDates()">
+			    <option value="DAILY">Daily</option>
+			    <option value="WEEKLY">Weekly</option>
+			    <option value="MONTHLY">Monthly</option>
+			    <option value="QUARTERLY">Quarterly</option>
+			    <option value="YEARLY">Yearly</option>
+			    <option value="CUSTOM">Custom</option>
+			</select>
         </div>
 
         <div id="dailyBox">
@@ -135,7 +139,7 @@ function setDefaultDates(){
 function toggleCustomDates(){
     const type = document.getElementById('reportType').value;
 
-    document.getElementById('dailyBox').style.display = type === 'DAILY' ? 'block' : 'none';
+    document.getElementById('dailyBox').style.display = type !== 'CUSTOM' ? 'block' : 'none';
     document.getElementById('fromBox').style.display = type === 'CUSTOM' ? 'block' : 'none';
     document.getElementById('toBox').style.display = type === 'CUSTOM' ? 'block' : 'none';
 }
@@ -148,7 +152,19 @@ async function loadReport(){
     if(type === 'DAILY'){
         const date = document.getElementById('reportDate').value;
         url = '/reports/inventory/daily?date=' + date;
-    }else{
+    } else if(type === 'WEEKLY'){
+        const date = document.getElementById('reportDate').value;
+        url = '/reports/inventory/weekly?date=' + date;
+    } else if(type === 'MONTHLY'){
+        const date = document.getElementById('reportDate').value;
+        url = '/reports/inventory/monthly?date=' + date;
+    } else if(type === 'QUARTERLY'){
+        const date = document.getElementById('reportDate').value;
+        url = '/reports/inventory/quarterly?date=' + date;
+    } else if(type === 'YEARLY'){
+        const date = document.getElementById('reportDate').value;
+        url = '/reports/inventory/yearly?date=' + date;
+    } else {
         const from = document.getElementById('fromDate').value;
         const to = document.getElementById('toDate').value;
         url = '/reports/inventory/custom?fromDate=' + from + '&toDate=' + to;
@@ -164,7 +180,6 @@ async function loadReport(){
     const data = await res.json();
     renderReport(data);
 }
-
 function renderReport(data){
     document.getElementById('reportArea').style.display = 'block';
 

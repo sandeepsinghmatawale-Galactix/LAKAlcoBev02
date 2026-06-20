@@ -29,4 +29,13 @@ public interface InventorySessionRepository extends JpaRepository<InventorySessi
 
     List<InventorySession> findByBarBarIdAndSessionDateBetweenOrderBySessionDateDesc(
         Long barId, LocalDateTime from, LocalDateTime to);
+    
+    
+    List<InventorySession> findByBarBarIdAndStatusAndSessionDateBetweenOrderBySessionDateDesc(
+            Long barId,
+            SessionStatus status,
+            LocalDateTime from,
+            LocalDateTime to
+    );
+    
 }

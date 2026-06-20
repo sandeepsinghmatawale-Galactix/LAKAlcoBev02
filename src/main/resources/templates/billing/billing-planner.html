@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>Billing Planner</title>
+
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,sans-serif;margin:0;background:#f4f6f9;color:#333}
+header{background:white;padding:16px 30px;border-bottom:2px solid #ddd;display:flex;justify-content:space-between;align-items:center}
+main{padding:30px}
+.card{background:white;border:1px solid #e0e0e0;border-radius:10px;padding:22px;box-shadow:0 2px 6px rgba(0,0,0,.06)}
+.grid{display:grid;grid-template-columns:1fr 1fr auto auto;gap:12px;margin-bottom:18px}
+input{padding:10px;border:1px solid #ccc;border-radius:5px;width:100%}
+.btn{border:none;border-radius:5px;padding:10px 15px;font-weight:bold;cursor:pointer}
+.btn-blue{background:#1a73e8;color:white}
+.btn-green{background:#34a853;color:white}
+.btn-red{background:#ea4335;color:white}
+.btn-gray{background:#f1f3f4;color:#333}
+.summary{display:flex;gap:20px;flex-wrap:wrap;margin:18px 0;padding:16px;border-radius:8px;background:#e6f4ea;color:#2d8e47;font-weight:bold}
+.summary.danger{background:#fce8e6;color:#c5221f}
+.search-box{position:relative;margin-bottom:18px}
+.suggestions{position:absolute;background:white;border:1px solid #ddd;border-radius:6px;box-shadow:0 6px 14px rgba(0,0,0,.12);max-height:280px;overflow-y:auto;display:none;z-index:100;width:100%}
+.suggestion-item{padding:10px;cursor:pointer;border-bottom:1px solid #eee}
+.suggestion-item:hover{background:#f8f9fa}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{padding:12px;background:#f8f9fa;color:#777;text-transform:uppercase;font-size:12px;text-align:left;border-bottom:1px solid #ddd}
+td{padding:10px 12px;border-bottom:1px solid #eee;vertical-align:middle}
+.qty-wrap{display:flex;align-items:center;gap:6px}
+.qty-btn{width:32px;height:32px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;background:#f1f3f4}
+.qty-input{width:80px;text-align:center}
+.price-input{width:110px}
+.empty{text-align:center;color:#aaa;padding:30px}
+.alert{display:none;padding:12px 16px;border-radius:6px;margin-bottom:15px;font-weight:bold}
+.success{background:#e6f4ea;color:#2d8e47}
+.error{background:#fce8e6;color:#c5221f}
+.small-note{font-size:12px;color:#777;margin-top:4px}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div>
+        <strong>🧾 Billing Planner</strong>
+        <div style="font-size:12px;color:#888;">Plan purchase billing without changing stockroom or wells inventory</div>
+    </div>
+
+    <button class="btn btn-gray" onclick="window.location='/bar/dashboard'">← Back</button>
+</header>
+
+<main>
+
+<div id="successMsg" class="alert success"></div>
+<div id="errorMsg" class="alert error"></div>
+
+<div class="card">
+    <h2 style="margin-top:0;">Create Billing Plan</h2>
+    <p style="color:#777;margin-top:0;">
+        Select depot brands/sizes, adjust quantity, compare against budget, and save for billing history.
+    </p>
+
+    <div class="grid">
+        <div>
+            <label><b>Billing Date & Time</b></label>
+            <input id="billingName" type="datetime-local">
+        </div>
+
+        <div>
+            <label><b>Budget Amount</b></label>
+            <input id="budgetAmount"
+                   type="number"
+                   min="0"
+                   step="0.01"
+                   placeholder="Example: 10000"
+                   oninput="recalculate()">
+        </div>
+
+        <div style="align-self:end;">
+            <button class="btn btn-blue" onclick="loadCatalog()">🔄 Load Catalog</button>
+        </div>
+
+        <div style="align-self:end;">
+            <button class="btn btn-gray" onclick="loadHistory()">📜 History</button>
+        </div>
+    </div>
+
+    <div class="search-box">
+        <label><b>Search Depot Brand / Size</b></label>
+        <input id="searchInput"
+               placeholder="Search Old Monk, Signature, 750..."
+               oninput="searchProducts()"
+               autocomplete="off">
+
+        <div id="suggestions" class="suggestions"></div>
+    </div>
+
+    <div id="summaryBox" class="summary">
+        <span>Budget: ₹<b id="budgetView">0.00</b></span>
+        <span>Total: ₹<b id="totalView">0.00</b></span>
+        <span>Remaining: ₹<b id="remainingView">0.00</b></span>
+        <span>Status: <b id="budgetStatusView">WITHIN BUDGET</b></span>
+    </div>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Brand</th>
+            <th>Size</th>
+            <th>Pack</th>
+            <th>Purchase Price</th>
+            <th>Qty</th>
+            <th>Line Total</th>
+            <th>Remove</th>
+        </tr>
+        </thead>
+
+        <tbody id="billingBody">
+        <tr>
+            <td colspan="7" class="empty">Search and add products to billing planner.</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div style="margin-top:20px;text-align:right;">
+        <button class="btn btn-green" onclick="saveBilling()">✅ Save Billing Plan</button>
+    </div>
+</div>
+
+<div id="historyCard" class="card" style="margin-top:25px;display:none;">
+    <h2 style="margin-top:0;">Billing History</h2>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Billing ID</th>
+            <th>Date</th>
+            <th>Budget</th>
+            <th>Total</th>
+            <th>Remaining</th>
+            <th>Status</th>
+            <th>Items</th>
+            <th>Qty</th>
+        </tr>
+        </thead>
+        <tbody id="historyBody">
+        <tr>
+            <td colspan="8" class="empty">No history loaded.</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+</main>
+
+<script>
+let catalog = [];
+let billingLines = [];
+
+function setDefaultBillingDateTime(){
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('billingName').value = now.toISOString().slice(0,16);
+}
+
+async function loadCatalog(){
+    try{
+        const res = await fetch('/inventory/catalog');
+
+        if(!res.ok){
+            throw new Error('Failed to load depot catalog. Check /inventory/catalog endpoint.');
+        }
+
+        catalog = await res.json();
+        showSuccess('Depot catalog loaded.');
+
+    }catch(e){
+        showError(e.message);
+    }
+}
+
+function searchProducts(){
+    const q = document.getElementById('searchInput').value.toLowerCase().trim();
+    const box = document.getElementById('suggestions');
+
+    box.innerHTML = '';
+
+    if(!q){
+        box.style.display = 'none';
+        return;
+    }
+
+    const matches = catalog.filter(item => {
+        const text = `${item.brandName || ''} ${item.sizeMl || ''} ${item.packagingType || ''}`.toLowerCase();
+        return text.includes(q);
+    }).slice(0, 25);
+
+    if(matches.length === 0){
+        box.innerHTML = `<div class="suggestion-item">No product found</div>`;
+        box.style.display = 'block';
+        return;
+    }
+
+    matches.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-item';
+
+        div.innerHTML = `
+            <b>${escapeHtml(item.brandName)}</b>
+            · ${escapeHtml(item.sizeMl)} ml
+            · ${escapeHtml(item.packagingType || '-')}
+            <span style="float:right;">₹${formatMoney(item.mrp)}</span>
+        `;
+
+        div.onclick = () => addProduct(item);
+
+        box.appendChild(div);
+    });
+
+    box.style.display = 'block';
+}
+
+function addProduct(item){
+    const brandSizeId = item.brandSizeId ?? item.depotBrandSizeId;
+    const brandId = item.brandId ?? item.depotBrandId;
+    const price = Number(item.mrp ?? item.purchasePrice ?? 0);
+
+    const existing = billingLines.find(line =>
+        String(line.depotBrandSizeId) === String(brandSizeId)
+    );
+
+    if(existing){
+        existing.quantity += 1;
+    }else{
+        billingLines.push({
+            depotBrandId: Number(brandId),
+            depotBrandSizeId: Number(brandSizeId),
+            brandName: item.brandName,
+            sizeMl: Number(item.sizeMl),
+            packagingType: item.packagingType || '',
+            purchasePrice: price,
+            quantity: 1
+        });
+    }
+
+    document.getElementById('searchInput').value = '';
+    document.getElementById('suggestions').style.display = 'none';
+
+    renderTable();
+    recalculate();
+}
+
+function renderTable(){
+    const tbody = document.getElementById('billingBody');
+    tbody.innerHTML = '';
+
+    if(billingLines.length === 0){
+        tbody.innerHTML = `<tr><td colspan="7" class="empty">Search and add products to billing planner.</td></tr>`;
+        return;
+    }
+
+    billingLines.forEach((line, index) => {
+        const total = Number(line.purchasePrice || 0) * Number(line.quantity || 0);
+
+        const tr = document.createElement('tr');
+
+        tr.innerHTML = `
+            <td><b>${escapeHtml(line.brandName)}</b></td>
+            <td>${escapeHtml(line.sizeMl)} ml</td>
+            <td>${escapeHtml(line.packagingType)}</td>
+
+            <td>
+                <input class="price-input"
+                       type="number"
+                       min="0.01"
+                       step="0.01"
+                       value="${line.purchasePrice}"
+                       onchange="setPurchasePrice(${index}, this.value)">
+                <div class="small-note">Editable for billing reference</div>
+            </td>
+
+            <td>
+                <div class="qty-wrap">
+                    <button class="qty-btn" onclick="changeQty(${index}, -1)">−</button>
+
+                    <input class="qty-input"
+                           type="number"
+                           min="1"
+                           step="1"
+                           value="${line.quantity}"
+                           onchange="setQty(${index}, this.value)">
+
+                    <button class="qty-btn" onclick="changeQty(${index}, 1)">+</button>
+                </div>
+            </td>
+
+            <td><b>₹${formatMoney(total)}</b></td>
+
+            <td>
+                <button class="btn btn-red" onclick="removeLine(${index})">Remove</button>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+}
+
+function setPurchasePrice(index, value){
+    const price = Number(value || 0);
+
+    if(price <= 0){
+        showError('Purchase price must be greater than zero.');
+        renderTable();
+        return;
+    }
+
+    billingLines[index].purchasePrice = price;
+    renderTable();
+    recalculate();
+}
+
+function changeQty(index, delta){
+    billingLines[index].quantity = Number(billingLines[index].quantity || 0) + delta;
+
+    if(billingLines[index].quantity <= 0){
+        billingLines.splice(index, 1);
+    }
+
+    renderTable();
+    recalculate();
+}
+
+function setQty(index, value){
+    const qty = Number(value || 0);
+
+    if(qty <= 0){
+        billingLines.splice(index, 1);
+    }else{
+        billingLines[index].quantity = Math.floor(qty);
+    }
+
+    renderTable();
+    recalculate();
+}
+
+function removeLine(index){
+    billingLines.splice(index, 1);
+    renderTable();
+    recalculate();
+}
+
+function recalculate(){
+    const budget = Number(document.getElementById('budgetAmount').value || 0);
+
+    const total = billingLines.reduce((sum, line) => {
+        return sum + (Number(line.purchasePrice || 0) * Number(line.quantity || 0));
+    }, 0);
+
+    const remaining = budget - total;
+
+    document.getElementById('budgetView').textContent = formatMoney(budget);
+    document.getElementById('totalView').textContent = formatMoney(total);
+    document.getElementById('remainingView').textContent = formatMoney(remaining);
+
+    const summaryBox = document.getElementById('summaryBox');
+    const status = document.getElementById('budgetStatusView');
+
+    if(budget > 0 && total > budget){
+        summaryBox.classList.add('danger');
+        status.textContent = 'BUDGET EXCEEDED';
+    }else{
+        summaryBox.classList.remove('danger');
+        status.textContent = 'WITHIN BUDGET';
+    }
+}
+
+async function saveBilling(){
+    const budget = Number(document.getElementById('budgetAmount').value || 0);
+    const billingDateTime = document.getElementById('billingName').value;
+
+    if(!billingDateTime){
+        showError('Billing date and time is required.');
+        return;
+    }
+
+    if(billingLines.length === 0){
+        showError('Please add at least one product.');
+        return;
+    }
+
+    const payload = {
+        billingName: billingDateTime,
+        budgetAmount: budget,
+        lines: billingLines.map(line => ({
+            depotBrandId: line.depotBrandId,
+            depotBrandSizeId: line.depotBrandSizeId,
+            brandName: line.brandName,
+            sizeMl: line.sizeMl,
+            purchasePrice: Number(line.purchasePrice),
+            quantity: Number(line.quantity)
+        }))
+    };
+
+    try{
+        const res = await fetch('/billing/save', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify(payload)
+        });
+
+        if(!res.ok){
+            let msg = 'Failed to save billing.';
+            try{
+                const err = await res.json();
+                msg = err.message || err.error || msg;
+            }catch(e){}
+            throw new Error(msg);
+        }
+
+        const saved = await res.json();
+
+        showSuccess('Billing plan saved successfully. Billing ID: ' + saved.billingId);
+
+        billingLines = [];
+        document.getElementById('budgetAmount').value = '';
+        setDefaultBillingDateTime();
+
+        renderTable();
+        recalculate();
+        loadHistory();
+
+    }catch(e){
+        showError(e.message);
+    }
+}
+
+async function loadHistory(){
+    const card = document.getElementById('historyCard');
+    const body = document.getElementById('historyBody');
+
+    card.style.display = 'block';
+    body.innerHTML = `<tr><td colspan="8" class="empty">Loading history...</td></tr>`;
+
+    try{
+        const res = await fetch('/billing/history');
+
+        if(!res.ok){
+            throw new Error('Failed to load billing history.');
+        }
+
+        const rows = await res.json();
+
+        if(rows.length === 0){
+            body.innerHTML = `<tr><td colspan="8" class="empty">No billing history found.</td></tr>`;
+            return;
+        }
+
+        body.innerHTML = '';
+
+        rows.forEach(row => {
+            const tr = document.createElement('tr');
+
+            tr.innerHTML = `
+                <td>${row.billingId}</td>
+                <td>${escapeHtml(row.billingName || '-')}</td>
+                <td>₹${formatMoney(row.budgetAmount)}</td>
+                <td>₹${formatMoney(row.totalAmount)}</td>
+                <td>₹${formatMoney(row.budgetRemaining)}</td>
+                <td>${escapeHtml(row.budgetStatus)}</td>
+                <td>${row.totalItems}</td>
+                <td>${row.totalQuantity}</td>
+            `;
+
+            body.appendChild(tr);
+        });
+
+    }catch(e){
+        body.innerHTML = `<tr><td colspan="8" class="empty">${escapeHtml(e.message)}</td></tr>`;
+    }
+}
+
+function showSuccess(msg){
+    const el = document.getElementById('successMsg');
+    el.textContent = '✅ ' + msg;
+    el.style.display = 'block';
+    document.getElementById('errorMsg').style.display = 'none';
+}
+
+function showError(msg){
+    const el = document.getElementById('errorMsg');
+    el.textContent = '❌ ' + msg;
+    el.style.display = 'block';
+    document.getElementById('successMsg').style.display = 'none';
+}
+
+function formatMoney(value){
+    const num = Number(value || 0);
+    return num.toFixed(2);
+}
+
+function escapeHtml(value){
+    return String(value ?? '')
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'","&#039;");
+}
+
+document.addEventListener('click', function(e){
+    if(!e.target.closest('.search-box')){
+        document.getElementById('suggestions').style.display = 'none';
+    }
+});
+
+setDefaultBillingDateTime();
+loadCatalog();
+</script>
+
+</body>
+</html>
